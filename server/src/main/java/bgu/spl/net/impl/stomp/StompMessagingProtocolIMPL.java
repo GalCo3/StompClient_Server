@@ -49,7 +49,7 @@ public class StompMessagingProtocolIMPL implements StompMessagingProtocol<String
         else
         {
             // send error message
-            //should  
+            //should
         }
 
 
