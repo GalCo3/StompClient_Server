@@ -29,33 +29,25 @@ public class StompMessagingProtocolIMPL implements StompMessagingProtocol<String
         String action = message.substring(0,index);
         message = message.substring(index);
 
-        if(action.equals("CONNECT"))
-        {
-            connect(message);
-        }
-        else if(action.equals("SEND"))
-        {
-            send(message);
-        }
-
-        else if (action.equals("SUBSCRIBE"))
-        {
-            subscribe(message);
-        }
-
-        else if (action.equals("UNSUBSCRIBE"))
-        {
-            unsubscribe(message);
-        }
-
-        else if (action.equals("DISCONNECT"))
-        {
-            disconnect(message);
-        }
-        else
-        {
-            // send error message  //#TODO
-            //should
+        switch (action) {
+            case "CONNECT":
+                connect(message);
+                break;
+            case "SEND":
+                send(message);
+                break;
+            case "SUBSCRIBE":
+                subscribe(message);
+                break;
+            case "UNSUBSCRIBE":
+                unsubscribe(message);
+                break;
+            case "DISCONNECT":
+                disconnect(message);
+                break;
+            default:
+                errorMSG("", "malformed action received", message, "Action is not a part of the protocol actions");// send error message
+                break;
         }
 
 
@@ -64,17 +56,17 @@ public class StompMessagingProtocolIMPL implements StompMessagingProtocol<String
     private void connect(String msg) //user try to connect
     {
 
-        Map<String,String> lines = new WeakHashMap<>();
+        Map<String, String> lines = new WeakHashMap<>();
 
         String[] pairs = msg.split("\n");
 
-        for (int i=0;i<pairs.length;i++) {
-            
+        for (int i = 0; i < pairs.length; i++) {
+
             String pair = pairs[i];
-            
-            if (pair.equals("") && (i == pairs.length-2 | i==0))
+
+            if (pair.equals("") && (i == pairs.length - 2 | i == 0))
                 continue;
-            
+
             if (pair.equals("^ @"))
                 break;
 
@@ -95,8 +87,11 @@ public class StompMessagingProtocolIMPL implements StompMessagingProtocol<String
         }
 
         if (!lines.get("host").equals("stomp . cs . bgu . ac . il"))
-            //return error frame //#TODO
+        {
+            errorMSG("","malformed frame received",msg,"host should be 'stomp . cs . bgu . ac . il'");
             return;
+        }
+
 
         boolean acceptBool = false;
         boolean hostBool = false;
@@ -157,11 +152,15 @@ public class StompMessagingProtocolIMPL implements StompMessagingProtocol<String
         }
 
         if (!loginBool)
-            //#TODO
+        {
+            errorMSG("","malformed frame received",msg,"does not contains login line");
             return;
+        }
+
 
         if (!passBool)
-            //#TODO
+        {
+            errorMSG("","malformed frame received",msg,"does not contains passcode line");
             return;
         }
 

@@ -66,11 +66,11 @@ public class ConnectionsIMPL<T> implements Connections<T> {
     {
         if (!users_cond.containsKey(connectionId))
             // user with such connectionId does not exist
-            return false;
+            return "User with such connection id does not exist";
 
         if (!users_cond.get(connectionId))
             // user is disconnected
-            return false;
+            return "User is disconnected already";
 
         if (!topics.containsKey(channel))
             // topic does not exist
@@ -80,20 +80,20 @@ public class ConnectionsIMPL<T> implements Connections<T> {
 
         if (isContainsX(check,connectionId))
             // already subscribes to this chanel
-            return false;
+            return "User is subscribes to this chanel already";
 
         check.add(new Point(connectionId,subId));
-        return true;
+        return "GOOD";
     }
 
     @Override
     public String unsubscribe(int connectionId,int subId)
     {
         if (!users_cond.containsKey(connectionId))
-            return false;
+            return "User with such connection id does not exist";
 
         if (!users_cond.get(connectionId))
-            return false;
+            return "User is disconnected already";
 
         Point check = new Point(connectionId,subId);
         boolean deleted = false;
@@ -103,7 +103,7 @@ public class ConnectionsIMPL<T> implements Connections<T> {
             if (list.contains(check))
             {
                 list.remove(check);
-                return true;
+                return "GOOD";
             }
         }
 
