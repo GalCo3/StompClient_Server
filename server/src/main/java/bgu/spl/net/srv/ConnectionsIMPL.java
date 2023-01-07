@@ -14,11 +14,7 @@ public class ConnectionsIMPL<T> implements Connections<T> {
 
     //Maps for users
     private Map<String,String> users; //<username,password>
-
     private Map<Integer,Boolean> users_cond; //if connected or not  //<connectionId,isConnected>
-
-//    private Map<Integer,String> id_to_user;  //<id user,user_name>
-
 
 
 
@@ -139,15 +135,11 @@ public class ConnectionsIMPL<T> implements Connections<T> {
         users_cond.put(connectionId,false);
         clients_ConnectionHandler.remove(connectionId);
         return "GOOD";
-        //users_cond.put(id_to_user.get(connectionId),false);
     }
-
-
 
     public int getId() {
         return id_counter++;
     }
-
 
     @Override
     public String connect(String user_name, String password,int connectionId) {
