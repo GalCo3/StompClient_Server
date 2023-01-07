@@ -28,13 +28,20 @@ public class StompServer {
         stomp.process(msg);
 
         msg = "SUBSCRIBE\n" +
-                "id : 1\n" +
+                "id : 17\n" +
                 "destination : / dest\n" +
                 "\n" +
                 "^ @";
 
         stomp.process(msg);
 
+        msg = "UNSUBSCRIBE\n" +
+                "id :17\n" +
+                "receipt :913\n" +
+                "\n"+
+                "^ @";
+
+        stomp.process(msg);
 
     }
 }

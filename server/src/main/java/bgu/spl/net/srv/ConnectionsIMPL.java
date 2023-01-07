@@ -87,6 +87,30 @@ public class ConnectionsIMPL<T> implements Connections<T> {
         return true;
     }
 
+    public boolean unsubscribe(int connectionId,int subId)
+    {
+        if (!users_cond.containsKey(connectionId))
+            return false;
+
+        if (!users_cond.get(connectionId))
+            return false;
+
+        Point check = new Point(connectionId,subId);
+        boolean deleted = false;
+
+        for (List <Point> list: topics.values())
+        {
+            if (list.contains(check))
+            {
+                list.remove(check);
+                return true;
+            }
+        }
+
+        //#TODO error, does not subscribe to any channel
+        return false;
+    }
+
     private boolean isContainsX(List<Point> p ,int connectionId)
     {
         for (Point point :p)

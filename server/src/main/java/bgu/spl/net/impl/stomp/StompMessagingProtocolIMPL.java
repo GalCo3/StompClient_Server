@@ -45,16 +45,16 @@ public class StompMessagingProtocolIMPL implements StompMessagingProtocol<String
 
         else if (action.equals("UNSUBSCRIBE"))
         {
-
+            unsubscribe(message);
         }
 
         else if (action.equals("DISCONNECT"))
         {
-
+            disconnect(message);
         }
         else
         {
-            // send error message
+            // send error message  //#TODO
             //should
         }
 
@@ -80,7 +80,7 @@ public class StompMessagingProtocolIMPL implements StompMessagingProtocol<String
                 break;
             
             if (!pair.contains(":"))
-                //return error msg
+                //return error msg //#TODO
                 return;
             
             String[] keyValue = pair.split(":");
@@ -88,11 +88,11 @@ public class StompMessagingProtocolIMPL implements StompMessagingProtocol<String
         }
 
         if (!lines.get("accept - version").equals("1.2"))
-            //return error frame
+            //return error frame  //#TODO
             return;
 
         if (!lines.get("host").equals("stomp . cs . bgu . ac . il"))
-            //return error frame
+            //return error frame //#TODO
             return;
 
         boolean acceptBool = false;
@@ -105,7 +105,7 @@ public class StompMessagingProtocolIMPL implements StompMessagingProtocol<String
             if (entry.getKey().equals("accept - version"))
             {
                 if (acceptBool)
-                    //error more than 1 time
+                    //error more than 1 time //#TODO
                     return;
                 else
                     acceptBool =true;
@@ -114,7 +114,7 @@ public class StompMessagingProtocolIMPL implements StompMessagingProtocol<String
             else if (entry.getKey().equals("host"))
             {
                 if (hostBool)
-                    //error more than 1 time
+                    //error more than 1 time //#TODO
                     return;
                 else
                     hostBool = true;
@@ -123,7 +123,7 @@ public class StompMessagingProtocolIMPL implements StompMessagingProtocol<String
             else if (entry.getKey().equals("login"))
             {
                 if (loginBool)
-                    //error more than 1 time
+                    //error more than 1 time //#TODO
                     return;
                 else
                     loginBool = true;
@@ -132,36 +132,41 @@ public class StompMessagingProtocolIMPL implements StompMessagingProtocol<String
             else if (entry.getKey().equals("passcode"))
             {
                 if (passBool)
-                    //error more than 1 time
+                    //error more than 1 time //#TODO
                     return;
                 else
                     passBool=true;
             }
             else
-                //error line
+                //error line //#TODO
                 return;
         }
 
         if (!acceptBool)
+            //#TODO
             return;
 
         if (!hostBool)
+            //#TODO
             return;
 
         if (!loginBool)
+            //#TODO
             return;
 
         if (!passBool)
+            //#TODO
             return;
 
         if (!connections.connect(lines.get("login"),lines.get("passcode"),connectionId))
-            //return error frame
+            //return error frame #TODO
             return;
 
 
         String out_msg = "CONNECTED\n" +
-                "version :1.2\n" +"\n"+
-                "^ @";
+                "version:1.2\n"
+                +"\n"+
+                "^@";
 
         connections.send(connectionId,out_msg);
     }
@@ -187,7 +192,7 @@ public class StompMessagingProtocolIMPL implements StompMessagingProtocol<String
                 break;
             
             if (!pair.contains(":"))
-                //return error msg
+                //return error msg #TODO
                 return;
             
             String[] keyValue = pair.split(":");
@@ -201,7 +206,7 @@ public class StompMessagingProtocolIMPL implements StompMessagingProtocol<String
             if (entry.getKey().equals("id"))
             {
                 if (idBool)
-                    //line of ID appear more than 1 time
+                    //line of ID appear more than 1 time #TODO
                     return;
                 else
                     idBool = true;
@@ -209,34 +214,106 @@ public class StompMessagingProtocolIMPL implements StompMessagingProtocol<String
             else if (entry.getKey().equals("destination"))
             {
                 if (destBool)
-                    //line of destination appear more than 1 time
+                    //line of destination appear more than 1 time #TODO
                     return;
                 else
                     destBool = true;
             }
             else
-                // error line - does not suppose to be there
+                // error line - does not suppose to be there #TODO
                 return;
         }
 
         if (!destBool)
-            // destination missing
+            // destination missing #TODO
             return;
 
         if (!idBool)
-            // id missing
+            // id missing #TODO
             return;
 
 
         if (!connections.subscribe(lines.get("destination"),connectionId,Integer.parseInt(lines.get("id"))))
-            //error in subscribe
+            //error in subscribe #TODO
             return;
 
         String msg_out = "RECEIPT\n" +
-                "receipt - id :"+lines.get("id")+"\n"+"\n" +
-                "^ @";
+                "receipt-id:"+lines.get("id")+"\n"+"\n" +
+                "^@";
 
         connections.send(connectionId,msg_out);
+    }
+
+    private void unsubscribe(String msg)
+    {
+        Map<String,String> lines = new WeakHashMap<>();
+
+        String[] pairs = msg.split("\n");
+
+        for (int i=0;i<pairs.length;i++) {
+
+            String pair = pairs[i];
+
+            if (pair.equals("") && (i == pairs.length-2 | i==0))
+                continue;
+
+            if (pair.equals("^ @"))
+                break;
+
+            if (!pair.contains(":"))
+                //return error msg #TODO
+                return;
+
+            String[] keyValue = pair.split(":");
+            lines.put(keyValue[0].trim(), keyValue[1].trim());
+        }
+
+        boolean idBool = false;
+        boolean recBool = false;
+
+        for (Map.Entry<String,String> entry:lines.entrySet())
+        {
+            if (entry.getKey().equals("id"))
+            {
+                if (idBool)
+                    //id line appear more than 1 time #TODO
+                    return;
+                else
+                    idBool = true;
+            }
+            else if (entry.getKey().equals("receipt"))
+            {
+                if (recBool)
+                    return;
+                else
+                    recBool = true;
+            }
+            else
+                //error line #TODO
+                return;
+        }
+
+        if (!idBool)
+            //#TODO
+            return;
+
+        if (!recBool)
+            return;
+
+        if (!connections.unsubscribe(connectionId,Integer.parseInt(lines.get("id"))))
+            //#TODO
+            return;
+
+        String msg_out =
+                "RECEIPT\n" +
+                        "receipt-id:"+lines.get("receipt")+"\n" +
+                        "\n" +
+                        "^@";
+    }
+
+    private void disconnect(String msg)
+    {
+
     }
     @Override
     public boolean shouldTerminate() {
