@@ -29,30 +29,28 @@ public class ConnectionsIMPL<T> implements Connections<T> {
         topics = new WeakHashMap<>();
         users = new WeakHashMap<>();
         users_cond = new WeakHashMap<>();
-//        id_to_user = new WeakHashMap<>();
     }
 
     public void create_ConnectionHandler(int clientId,ConnectionHandler connectionHandler)
     {
         clients_ConnectionHandler.put(clientId,connectionHandler);
-//        id_to_user.put(clientId,userName);
     }
 
     @Override
-    public boolean send(int connectionId, T msg) {
+    public String send(int connectionId, T msg) {
         if (clients_ConnectionHandler.containsKey(connectionId))
         {
             clients_ConnectionHandler.get(connectionId).send(msg);
-            return true;
+            return "GOOD";
         }
-        return false;
+        return "User with such connectionID does not exist";
     }
 
     @Override
-    public void send(String channel, T msg) {
+    public String send(String channel, T msg) {
 
         if (!topics.containsKey(channel))
-            return;
+            return "Channel does not exist";
 
         List ids = topics.get(channel);
         Iterator<Point> iterator = ids.iterator();
@@ -61,9 +59,10 @@ public class ConnectionsIMPL<T> implements Connections<T> {
         {
             clients_ConnectionHandler.get(iterator.next().x).send(msg);
         }
+        return "GOOD";
     }
-
-    public boolean subscribe(String channel,int connectionId,int subId)
+    @Override
+    public String subscribe(String channel,int connectionId,int subId)
     {
         if (!users_cond.containsKey(connectionId))
             // user with such connectionId does not exist
@@ -87,7 +86,8 @@ public class ConnectionsIMPL<T> implements Connections<T> {
         return true;
     }
 
-    public boolean unsubscribe(int connectionId,int subId)
+    @Override
+    public String unsubscribe(int connectionId,int subId)
     {
         if (!users_cond.containsKey(connectionId))
             return false;
@@ -107,8 +107,8 @@ public class ConnectionsIMPL<T> implements Connections<T> {
             }
         }
 
-        //#TODO error, does not subscribe to any channel
-        return false;
+        // error, does not subscribe to any channel
+        return "Can't unsubscribe because user is not subscribe to any channel";
     }
 
     private boolean isContainsX(List<Point> p ,int connectionId)
@@ -123,19 +123,23 @@ public class ConnectionsIMPL<T> implements Connections<T> {
 
 
     @Override
-    public void disconnect(int connectionId) {
+    public String disconnect(int connectionId) {
+
+        if (users_cond.containsKey(connectionId))
+            return "User with such connection id does not exist";
+
+        if (!users_cond.get(connectionId))
+            return "User is disconnected already";
+
         for (List<Point> list: topics.values())
         {
-            for (Point point:list)
-            {
-                if (point.x == (connectionId))
-                    list.remove(point);
-            }
+            list.removeIf(point -> point.x == (connectionId));
         }
 
         users_cond.put(connectionId,false);
         clients_ConnectionHandler.remove(connectionId);
-//        users_cond.put(id_to_user.get(connectionId),false);
+        return "GOOD";
+        //users_cond.put(id_to_user.get(connectionId),false);
     }
 
 
@@ -146,28 +150,28 @@ public class ConnectionsIMPL<T> implements Connections<T> {
 
 
     @Override
-    public boolean connect(String user_name, String password,int connectionId) {
+    public String connect(String user_name, String password,int connectionId) {
         if (users_cond.containsKey(connectionId) &&users_cond.get(connectionId))
             //user is already connected
-            return false;
+            return "User is already connected";
 
         if (users.containsKey(user_name))
             //user already exist
             if (users.get(user_name).equals(password))
                 {
                     users_cond.put(connectionId,true);
-                    return true;
+                    return "GOOD";
                 }
             else
                 //wrong password
-                return false;
+                return "Wrong password";
 
         else
         {
             //new user
             users.put(user_name,password);
             users_cond.put(connectionId,true);
-            return true;
+            return "GOOD";
         }
     }
 }

@@ -61,7 +61,6 @@ public class StompMessagingProtocolIMPL implements StompMessagingProtocol<String
 
     }
 
-    //private
     private void connect(String msg) //user try to connect
     {
 
@@ -78,18 +77,22 @@ public class StompMessagingProtocolIMPL implements StompMessagingProtocol<String
             
             if (pair.equals("^ @"))
                 break;
-            
+
             if (!pair.contains(":"))
-                //return error msg //#TODO
+            {
+                errorMSG("", "malformed frame received", msg, "contains a illegal statement");
                 return;
-            
+            }
+
             String[] keyValue = pair.split(":");
             lines.put(keyValue[0].trim(), keyValue[1].trim());
         }
 
         if (!lines.get("accept - version").equals("1.2"))
-            //return error frame  //#TODO
+        {
+            errorMSG("", "malformed frame received", msg, "accept version should be 1.2");
             return;
+        }
 
         if (!lines.get("host").equals("stomp . cs . bgu . ac . il"))
             //return error frame //#TODO
@@ -102,53 +105,56 @@ public class StompMessagingProtocolIMPL implements StompMessagingProtocol<String
 
         for (Map.Entry<String, String> entry:lines.entrySet())
         {
-            if (entry.getKey().equals("accept - version"))
-            {
-                if (acceptBool)
-                    //error more than 1 time //#TODO
+            switch (entry.getKey()) {
+                case "accept - version":
+                    if (acceptBool)
+                    {  //error more than 1 time
+                        errorMSG("", "malformed frame received", msg, "accept version line appears more than one time");
+                        return;
+                    } else
+                        acceptBool = true;
+                    break;
+                case "host":
+                    if (hostBool) {
+                        //error more than 1 time
+                        errorMSG("", "malformed frame received", msg, "host line appears more than one time");
+                        return;
+                    } else
+                        hostBool = true;
+                    break;
+                case "login":
+                    if (loginBool) {
+                        //error more than 1 time
+                        errorMSG("", "malformed frame received", msg, "login line appears more than one time");
+                        return;
+                    } else
+                        loginBool = true;
+                    break;
+                case "passcode":
+                    if (passBool) {
+                        //error more than 1 time
+                        errorMSG("", "malformed frame received", msg, "passcode line appears more than one time");
+                        return;
+                    } else
+                        passBool = true;
+                    break;
+                default:
+                    //error line
+                    errorMSG("", "malformed frame received", msg, "line" + entry + "should not be here");
                     return;
-                else
-                    acceptBool =true;
             }
-
-            else if (entry.getKey().equals("host"))
-            {
-                if (hostBool)
-                    //error more than 1 time //#TODO
-                    return;
-                else
-                    hostBool = true;
-            }
-
-            else if (entry.getKey().equals("login"))
-            {
-                if (loginBool)
-                    //error more than 1 time //#TODO
-                    return;
-                else
-                    loginBool = true;
-            }
-
-            else if (entry.getKey().equals("passcode"))
-            {
-                if (passBool)
-                    //error more than 1 time //#TODO
-                    return;
-                else
-                    passBool=true;
-            }
-            else
-                //error line //#TODO
-                return;
         }
 
         if (!acceptBool)
-            //#TODO
+        {
+            errorMSG("","malformed frame received",msg,"does not contains accept version line");
             return;
+        }
 
-        if (!hostBool)
-            //#TODO
+        if (!hostBool) {
+            errorMSG("","malformed frame received",msg,"does not contains host line");
             return;
+        }
 
         if (!loginBool)
             //#TODO
@@ -157,10 +163,15 @@ public class StompMessagingProtocolIMPL implements StompMessagingProtocol<String
         if (!passBool)
             //#TODO
             return;
+        }
 
-        if (!connections.connect(lines.get("login"),lines.get("passcode"),connectionId))
-            //return error frame #TODO
+
+        String ch = connections.connect(lines.get("login"),lines.get("passcode"),connectionId);
+        if (!ch.equals("GOOD"))
+        {
+            errorMSG("","connect problem",msg,ch);
             return;
+        }
 
 
         String out_msg = "CONNECTED\n" +
@@ -168,12 +179,36 @@ public class StompMessagingProtocolIMPL implements StompMessagingProtocol<String
                 +"\n"+
                 "^@";
 
-        connections.send(connectionId,out_msg);
+        ch = connections.send(connectionId,out_msg);
+        if(!ch.equals("GOOD"))
+            errorMSG("","send problem",msg,ch);
     }
 
     private void send(String msg)
     {
-      
+        Map<String,String> lines = new WeakHashMap<>();
+
+        String[] pairs = msg.split("\n");
+
+        for (int i=0;i<pairs.length;i++) {
+
+            String pair = pairs[i];
+
+            if (pair.equals("") && i==1)
+                continue;
+
+            if (pair.equals("^@"))
+                break;
+
+            if (!pair.contains(":"))
+            {
+                errorMSG("", "malformed frame received", msg, "contains a illegal statement");
+                return;
+            }
+
+            String[] keyValue = pair.split(":");
+            lines.put(keyValue[0].trim(), keyValue[1].trim());
+        }
     }
 
     public void subscribe(String msg)
@@ -190,10 +225,12 @@ public class StompMessagingProtocolIMPL implements StompMessagingProtocol<String
             
             if (pair.equals("^ @"))
                 break;
-            
+
             if (!pair.contains(":"))
-                //return error msg #TODO
+            {
+                errorMSG("", "malformed frame received", msg, "contains a illegal statement");
                 return;
+            }
             
             String[] keyValue = pair.split(":");
             lines.put(keyValue[0].trim(), keyValue[1].trim());
@@ -205,43 +242,52 @@ public class StompMessagingProtocolIMPL implements StompMessagingProtocol<String
         {
             if (entry.getKey().equals("id"))
             {
-                if (idBool)
-                    //line of ID appear more than 1 time #TODO
+                if (idBool) {//line of ID appear more than 1 time
+                    errorMSG("","malformed frame received",msg,"id line appears more than one time");
                     return;
+                }
                 else
                     idBool = true;
             }
             else if (entry.getKey().equals("destination"))
             {
-                if (destBool)
-                    //line of destination appear more than 1 time #TODO
+                if (destBool) {//line of destination appear more than 1 time
+                    errorMSG("","malformed frame received",msg,"destination line appears more than one time");
                     return;
+                }
                 else
                     destBool = true;
             }
             else
-                // error line - does not suppose to be there #TODO
+            {// error line - does not suppose to be there
+                errorMSG("","malformed frame received",msg,"line - "+ entry+"should not be here");
                 return;
+            }
         }
 
-        if (!destBool)
-            // destination missing #TODO
+        if (!destBool) {// destination missing
+            errorMSG("","malformed frame received",msg,"does not contains destination line");
             return;
+        }
 
-        if (!idBool)
-            // id missing #TODO
+        if (!idBool) {// id missing
+            errorMSG("","malformed frame received",msg,"does not contains id line");
             return;
+        }
 
-
-        if (!connections.subscribe(lines.get("destination"),connectionId,Integer.parseInt(lines.get("id"))))
-            //error in subscribe #TODO
+        String ch =connections.subscribe(lines.get("destination"),connectionId,Integer.parseInt(lines.get("id")));
+        if (!ch.equals("GOOD")) {//error in subscribe
+            errorMSG("","subscribe problem",msg,ch);
             return;
+        }
 
         String msg_out = "RECEIPT\n" +
                 "receipt-id:"+lines.get("id")+"\n"+"\n" +
                 "^@";
 
-        connections.send(connectionId,msg_out);
+        ch =connections.send(connectionId,msg_out);
+        if(!ch.equals("GOOD"))
+            errorMSG("","send problem",msg,ch);
     }
 
     private void unsubscribe(String msg)
@@ -261,8 +307,10 @@ public class StompMessagingProtocolIMPL implements StompMessagingProtocol<String
                 break;
 
             if (!pair.contains(":"))
-                //return error msg #TODO
+            {
+                errorMSG("", "malformed frame received", msg, "contains a illegal statement");
                 return;
+            }
 
             String[] keyValue = pair.split(":");
             lines.put(keyValue[0].trim(), keyValue[1].trim());
@@ -275,46 +323,149 @@ public class StompMessagingProtocolIMPL implements StompMessagingProtocol<String
         {
             if (entry.getKey().equals("id"))
             {
-                if (idBool)
-                    //id line appear more than 1 time #TODO
+                if (idBool) {//id line appear more than 1 time
+                    errorMSG("","malformed frame received",msg,"id line appears more than one time");
                     return;
+                }
                 else
                     idBool = true;
             }
             else if (entry.getKey().equals("receipt"))
             {
-                if (recBool)
+                if (recBool) {
+                    errorMSG("","malformed frame received",msg,"receipt line appears more than one time");
                     return;
+                }
                 else
                     recBool = true;
             }
-            else
-                //error line #TODO
+            else {//error line
+                errorMSG("","malformed frame received",msg,"line"+entry+" - should not be here");
                 return;
+            }
         }
 
-        if (!idBool)
-            //#TODO
+        if (!idBool) {
+            errorMSG("","malformed frame received",msg,"does not contains id line");
             return;
+        }
 
         if (!recBool)
+        {
+            errorMSG("","malformed frame received",msg,"does not contains receipt line");
             return;
+        }
 
-        if (!connections.unsubscribe(connectionId,Integer.parseInt(lines.get("id"))))
-            //#TODO
+        String ch =connections.unsubscribe(connectionId,Integer.parseInt(lines.get("id")));
+        if (!connections.unsubscribe(connectionId,Integer.parseInt(lines.get("id"))).equals("GOOD"))
+        {
+            errorMSG("","unsubscribe problem",msg,ch);
             return;
+        }
 
         String msg_out =
                 "RECEIPT\n" +
                         "receipt-id:"+lines.get("receipt")+"\n" +
                         "\n" +
                         "^@";
+
+        ch = connections.send(connectionId,msg_out);
+        if (!ch.equals("GOOD"))
+            errorMSG("","send message problem",msg,ch);
     }
 
     private void disconnect(String msg)
     {
+        Map<String,String> lines = new WeakHashMap<>();
+
+        String[] pairs = msg.split("\n");
+
+        for (int i=0;i<pairs.length;i++) {
+
+            String pair = pairs[i];
+
+            if (pair.equals("") && (i == pairs.length-2 | i==0))
+                continue;
+
+            if (pair.equals("^ @"))
+                break;
+
+            if (!pair.contains(":"))
+            {
+                errorMSG("", "malformed frame received", msg, "contains a illegal statement");
+                return;
+            }
+
+            String[] keyValue = pair.split(":");
+            lines.put(keyValue[0].trim(), keyValue[1].trim());
+        }
+
+        boolean recBool = false;
+
+        for (Map.Entry<String,String> entry:lines.entrySet())
+        {
+            if (entry.getKey().equals("receipt"))
+            {
+                if (recBool) {
+                    errorMSG("","malformed frame received",msg,"receipt line appears more than one time");
+                    return;
+                }
+                else
+                    recBool = true;
+            }
+            else
+                //error line
+            {
+                errorMSG("","malformed frame received",msg,"line"+entry+"  - should not be here");
+                return;
+            }
+        }
+
+
+        if (!recBool) {
+            errorMSG("","malformed frame received",msg,"does not contains receipt line");
+            return;
+        }
+
+        String ch =connections.disconnect(connectionId);
+        if (!ch.equals("GOOD"))
+        {
+            errorMSG("","disconnect problem",msg,ch);
+            return;
+        }
+
+
+        String msg_out = "RECEIPT\n" +
+                "receipt - id :"+lines.get("receipt")+"\n" +
+                "\n" +
+                "^ @";
+
+        ch = connections.send(connectionId,msg_out);
+        if (ch.equals("GOOD"))
+            shouldTerminate = true;
+        else
+            errorMSG("","send problem",msg,ch);
 
     }
+
+    public void errorMSG(String receipt,String errorMSG,String message,String detail)
+    {
+        String msg_out ="ERROR\n";
+        if(!receipt.equals("")) {
+            msg_out = msg_out + "receipt-id: " + receipt + "\n";
+        }
+            msg_out= msg_out+ "message: " + errorMSG + "\n"+"\n";
+        if(!message.equals("")){
+            msg_out= msg_out+ "The message:\n" +"----\n"+ message+"+"+"----\n";
+        }
+        if(!detail.equals("")){
+            msg_out= msg_out+ detail+"\n";
+        }
+        msg_out= msg_out+"^@";
+
+        connections.send(connectionId,msg_out);
+    }
+
     @Override
     public boolean shouldTerminate() {
         return shouldTerminate;
