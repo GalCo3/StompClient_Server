@@ -137,6 +137,17 @@ public class ConnectionsIMPL<T> implements Connections<T> {
         return "GOOD";
     }
 
+    public void forceDisconnect(int connectionId)
+    {
+        for (List<Point> list: topics.values())
+        {
+            list.removeIf(point -> point.x == (connectionId));
+        }
+
+        users_cond.put(connectionId,false);
+        clients_ConnectionHandler.remove(connectionId);
+    }
+
     public int getId() {
         return id_counter++;
     }

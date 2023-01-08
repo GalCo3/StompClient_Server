@@ -67,7 +67,7 @@ public class StompMessagingProtocolIMPL implements StompMessagingProtocol<String
             if (pair.equals("") && (i == pairs.length - 2 | i == 0))
                 continue;
 
-            if (pair.equals("^ @"))
+            if (pair.equals("^@"))
                 break;
 
             if (!pair.contains(":"))
@@ -175,8 +175,8 @@ public class StompMessagingProtocolIMPL implements StompMessagingProtocol<String
 
         String out_msg = "CONNECTED\n" +
                 "version:1.2\n"
-                +"\n"+
-                "^@";
+                +
+                "WHAT";
 
         ch = connections.send(connectionId,out_msg);
         if(!ch.equals("GOOD"))
@@ -188,26 +188,170 @@ public class StompMessagingProtocolIMPL implements StompMessagingProtocol<String
         Map<String,String> lines = new WeakHashMap<>();
 
         String[] pairs = msg.split("\n");
-
+        String lastIndent = "";
+        boolean desc = false;
         for (int i=0;i<pairs.length;i++) {
 
             String pair = pairs[i];
 
-            if (pair.equals("") && i==1)
+            if (pair.equals("") && (i==0||i==2))
                 continue;
 
             if (pair.equals("^@"))
                 break;
 
-            if (!pair.contains(":"))
+
+            if (pair.charAt(0)=='\t' | desc)
+            {
+                lines.put(lastIndent,lines.get(lastIndent)+"\n"+pair);
+                continue;
+            }
+
+            if (!pair.contains(":")&& pair.charAt(0)!='"')
             {
                 errorMSG("", "malformed frame received", msg, "contains a illegal statement");
                 return;
             }
 
             String[] keyValue = pair.split(":");
+            if (keyValue.length==1)
+                {
+                    lastIndent = keyValue[0].trim();
+                    desc = lastIndent.equals("description");
+
+                    keyValue = new String[2];
+                    keyValue[0]=lastIndent;
+                    keyValue[1]="";
+                }
             lines.put(keyValue[0].trim(), keyValue[1].trim());
         }
+
+        boolean destBool = false;
+        boolean userBool = false;
+        boolean eventBool = false;
+        boolean timeBool = false;
+        boolean generalGameBool = false;
+        boolean teamAupBool = false;
+        boolean teamBupBool = false;
+
+        for (Map.Entry<String,String> entry : lines.entrySet()) {
+            String temp= entry.getKey();
+            switch (temp) {
+                case "destination":
+                    if (destBool) {
+                        errorMSG("", "malformed frame received", msg, "user line appears more than one time");
+                        return;
+                    } else
+                        destBool = true;
+                    break;
+
+                case "user":
+                    if (userBool) {
+                        errorMSG("", "malformed frame received", msg, "user line appears more than one time");
+                        return;
+                    } else
+                        userBool = true;
+                    break;
+
+                case "event name":
+                    if (eventBool) {
+                        errorMSG("", "malformed frame received", msg, "event line appears more than one time");
+                        return;
+                    } else
+                        eventBool = true;
+                    break;
+
+                case "time":
+                    if (timeBool) {
+                        errorMSG("", "malformed frame received", msg, "time line appears more than one time");
+                        return;
+                    } else
+                        timeBool = true;
+                    break;
+
+                case "general game updates":
+                    if (generalGameBool) {
+                        errorMSG("", "malformed frame received", msg, "generalGameBool line appears more than one time");
+                        return;
+                    } else
+                        generalGameBool = true;
+                    break;
+
+                case "team a updates":
+                    if (teamAupBool) {
+                        errorMSG("", "malformed frame received", msg, "team a updates line appears more than one time");
+                        return;
+                    } else
+                        teamAupBool = true;
+                    break;
+
+                case "team b updates":
+                    if (teamBupBool) {
+                        errorMSG("", "malformed frame received", msg, "team b updated line appears more than one time");
+                        return;
+                    } else
+                        teamBupBool = true;
+                    break;
+
+                case "description":
+                    break;
+
+                default:
+                    errorMSG("", "malformed frame received", msg, "line - " + entry + "should not be here");
+                    return;
+
+            }
+        }
+
+
+        if (!destBool)
+        {
+            errorMSG("","malformed frame received",msg,"does not contains destination line");
+            return;
+        }
+
+        if (!userBool)
+        {
+            errorMSG("","malformed frame received",msg,"does not contains user line");
+            return;
+        }
+
+        if (!eventBool)
+        {
+            errorMSG("","malformed frame received",msg,"does not contains event line");
+            return;
+        }
+
+        if (!timeBool)
+        {
+            errorMSG("","malformed frame received",msg,"does not contains time line");
+            return;
+        }
+
+        if (!generalGameBool)
+        {
+            errorMSG("","malformed frame received",msg,"does not contains general game updates line");
+            return;
+        }
+
+        if (!teamAupBool)
+        {
+            errorMSG("","malformed frame received",msg,"does not contains team a updates line");
+            return;
+        }
+
+        if (!teamBupBool) {
+            errorMSG("", "malformed frame received", msg, "does not contains team b updates line");
+            return;
+        }
+
+        int i1 = msg.indexOf("user");
+        int i2 = msg.indexOf("^@") -1;
+        String msg_out = msg.substring(i1,i2);
+        String ch = connections.send(lines.get("destination"),msg_out);
+
+        if (!ch.equals("GOOD"))
+            errorMSG("","send problem",msg,ch);
     }
 
     public void subscribe(String msg)
@@ -222,7 +366,7 @@ public class StompMessagingProtocolIMPL implements StompMessagingProtocol<String
             if (pair.equals("") && (i == pairs.length-2 | i==0))
                 continue;
             
-            if (pair.equals("^ @"))
+            if (pair.equals("^@"))
                 break;
 
             if (!pair.contains(":"))
@@ -302,7 +446,7 @@ public class StompMessagingProtocolIMPL implements StompMessagingProtocol<String
             if (pair.equals("") && (i == pairs.length-2 | i==0))
                 continue;
 
-            if (pair.equals("^ @"))
+            if (pair.equals("^@"))
                 break;
 
             if (!pair.contains(":"))
@@ -386,7 +530,7 @@ public class StompMessagingProtocolIMPL implements StompMessagingProtocol<String
             if (pair.equals("") && (i == pairs.length-2 | i==0))
                 continue;
 
-            if (pair.equals("^ @"))
+            if (pair.equals("^@"))
                 break;
 
             if (!pair.contains(":"))
@@ -463,6 +607,8 @@ public class StompMessagingProtocolIMPL implements StompMessagingProtocol<String
         msg_out= msg_out+"^@";
 
         connections.send(connectionId,msg_out);
+        shouldTerminate= true;
+        connections.forceDisconnect(connectionId);
     }
 
     @Override
