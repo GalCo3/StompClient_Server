@@ -57,17 +57,24 @@ public class StompMessagingProtocolIMPL implements StompMessagingProtocol<String
     {
 
         Map<String, String> lines = new WeakHashMap<>();
+        String [] pairs = new String[0];
+        String[] pairs1 = msg.split("\n");
 
-        String[] pairs = msg.split("\n");
-
+        if(msg.charAt(msg.length()-1) == '\u0000') {
+            pairs = new String[pairs1.length +1 ];
+            for (int i = 0; i < pairs1.length; i++) {
+                pairs[i] = pairs1[i];
+            }
+            pairs[pairs1.length] = "\u0000";
+        }
         for (int i = 0; i < pairs.length; i++) {
 
             String pair = pairs[i];
 
-            if (pair.equals("") && (i == pairs.length - 2 | i == 0))
+            if (pair.equals("") && (i == pairs.length - 2 | i == 0 | i == pairs.length-3))
                 continue;
 
-            if (pair.equals("^@"))
+            if (pair.equals("\u0000"))
                 break;
 
             if (!pair.contains(":"))
@@ -173,10 +180,9 @@ public class StompMessagingProtocolIMPL implements StompMessagingProtocol<String
         }
 
 
-        String out_msg = "CONNECTED\n" +
-                "version:1.2\n"
-                +
-                "WHAT";
+        String out_msg =
+                "CONNECTED\n" +
+                "version:1.2\n";
 
         ch = connections.send(connectionId,out_msg);
         if(!ch.equals("GOOD"))
@@ -186,8 +192,18 @@ public class StompMessagingProtocolIMPL implements StompMessagingProtocol<String
     private void send(String msg)
     {
         Map<String,String> lines = new WeakHashMap<>();
+        String [] pairs = new String[0];
+        String[] pairs1 = msg.split("\n");
 
-        String[] pairs = msg.split("\n");
+        if(msg.charAt(msg.length()-1) == '\u0000') {
+            pairs = new String[pairs1.length +1 ];
+            for (int i = 0; i < pairs1.length; i++) {
+                pairs[i] = pairs1[i];
+            }
+            pairs[pairs1.length] = "\u0000";
+        }
+
+        pairs = msg.split("\n");
         String lastIndent = "";
         boolean desc = false;
         for (int i=0;i<pairs.length;i++) {
@@ -197,7 +213,7 @@ public class StompMessagingProtocolIMPL implements StompMessagingProtocol<String
             if (pair.equals("") && (i==0||i==2))
                 continue;
 
-            if (pair.equals("^@"))
+            if (pair.equals("\u0000"))
                 break;
 
 
@@ -228,6 +244,8 @@ public class StompMessagingProtocolIMPL implements StompMessagingProtocol<String
 
         boolean destBool = false;
         boolean userBool = false;
+        boolean teamABool = false;
+        boolean teamBBool = false;
         boolean eventBool = false;
         boolean timeBool = false;
         boolean generalGameBool = false;
@@ -253,6 +271,21 @@ public class StompMessagingProtocolIMPL implements StompMessagingProtocol<String
                         userBool = true;
                     break;
 
+                case "team a":
+                    if (teamABool) {
+                        errorMSG("", "malformed frame received", msg, "team a line appears more than one time");
+                        return;
+                    } else
+                        teamABool = true;
+                    break;
+
+                case "team b":
+                    if (teamBBool) {
+                        errorMSG("", "malformed frame received", msg, "team b line appears more than one time");
+                        return;
+                    } else
+                        teamBBool = true;
+                    break;
                 case "event name":
                     if (eventBool) {
                         errorMSG("", "malformed frame received", msg, "event line appears more than one time");
@@ -346,7 +379,7 @@ public class StompMessagingProtocolIMPL implements StompMessagingProtocol<String
         }
 
         int i1 = msg.indexOf("user");
-        int i2 = msg.indexOf("^@") -1;
+        int i2 = msg.indexOf("\u0000") -1;
         String msg_out = msg.substring(i1,i2);
         String ch = connections.send(lines.get("destination"),msg_out);
 
@@ -357,16 +390,25 @@ public class StompMessagingProtocolIMPL implements StompMessagingProtocol<String
     public void subscribe(String msg)
     {
         Map<String,String> lines = new WeakHashMap<>();
+        String [] pairs = new String[0];
+        String[] pairs1 = msg.split("\n");
 
-        String[] pairs = msg.split("\n");
+        if(msg.charAt(msg.length()-1) == '\u0000') {
+            pairs = new String[pairs1.length +1 ];
+            for (int i = 0; i < pairs1.length; i++) {
+                pairs[i] = pairs1[i];
+            }
+            pairs[pairs1.length] = "\u0000";
+        }
+        pairs = msg.split("\n");
 
         for (int i=0;i<pairs.length;i++) {
             String pair = pairs[i];
             
-            if (pair.equals("") && (i == pairs.length-2 | i==0))
+            if (pair.equals("") && (i==pairs.length-1|i == pairs.length-2 | i==0))
                 continue;
             
-            if (pair.equals("^@"))
+            if (pair.equals("\u0000"))
                 break;
 
             if (!pair.contains(":"))
@@ -381,6 +423,8 @@ public class StompMessagingProtocolIMPL implements StompMessagingProtocol<String
 
         boolean idBool = false;
         boolean destBool = false;
+        boolean recpBool = false;
+
         for (Map.Entry<String, String> entry:lines.entrySet())
         {
             if (entry.getKey().equals("id"))
@@ -400,6 +444,15 @@ public class StompMessagingProtocolIMPL implements StompMessagingProtocol<String
                 }
                 else
                     destBool = true;
+            }
+            else if (entry.getKey().equals("receipt"))
+            {
+                if (recpBool) {//line of destination appear more than 1 time
+                    errorMSG("","malformed frame received",msg,"receipt line appears more than one time");
+                    return;
+                }
+                else
+                    recpBool = true;
             }
             else
             {// error line - does not suppose to be there
@@ -425,8 +478,7 @@ public class StompMessagingProtocolIMPL implements StompMessagingProtocol<String
         }
 
         String msg_out = "RECEIPT\n" +
-                "receipt-id:"+lines.get("id")+"\n"+"\n" +
-                "^@";
+                "receipt-id:"+lines.get("id")+"\n";
 
         ch =connections.send(connectionId,msg_out);
         if(!ch.equals("GOOD"))
@@ -436,8 +488,17 @@ public class StompMessagingProtocolIMPL implements StompMessagingProtocol<String
     private void unsubscribe(String msg)
     {
         Map<String,String> lines = new WeakHashMap<>();
+        String [] pairs = new String[0];
+        String[] pairs1 = msg.split("\n");
 
-        String[] pairs = msg.split("\n");
+        if(msg.charAt(msg.length()-1) == '\u0000') {
+            pairs = new String[pairs1.length +1 ];
+            for (int i = 0; i < pairs1.length; i++) {
+                pairs[i] = pairs1[i];
+            }
+            pairs[pairs1.length] = "\u0000";
+        }
+        pairs = msg.split("\n");
 
         for (int i=0;i<pairs.length;i++) {
 
@@ -446,7 +507,7 @@ public class StompMessagingProtocolIMPL implements StompMessagingProtocol<String
             if (pair.equals("") && (i == pairs.length-2 | i==0))
                 continue;
 
-            if (pair.equals("^@"))
+            if (pair.equals("\0000"))
                 break;
 
             if (!pair.contains(":"))
@@ -520,8 +581,17 @@ public class StompMessagingProtocolIMPL implements StompMessagingProtocol<String
     private void disconnect(String msg)
     {
         Map<String,String> lines = new WeakHashMap<>();
+        String [] pairs = new String[0];
+        String[] pairs1 = msg.split("\n");
 
-        String[] pairs = msg.split("\n");
+        if(msg.charAt(msg.length()-1) == '\u0000') {
+            pairs = new String[pairs1.length +1 ];
+            for (int i = 0; i < pairs1.length; i++) {
+                pairs[i] = pairs1[i];
+            }
+            pairs[pairs1.length] = "\u0000";
+        }
+        pairs = msg.split("\n");
 
         for (int i=0;i<pairs.length;i++) {
 
@@ -530,7 +600,7 @@ public class StompMessagingProtocolIMPL implements StompMessagingProtocol<String
             if (pair.equals("") && (i == pairs.length-2 | i==0))
                 continue;
 
-            if (pair.equals("^@"))
+            if (pair.equals("\u0000"))
                 break;
 
             if (!pair.contains(":"))
@@ -579,9 +649,7 @@ public class StompMessagingProtocolIMPL implements StompMessagingProtocol<String
 
 
         String msg_out = "RECEIPT\n" +
-                "receipt - id :"+lines.get("receipt")+"\n" +
-                "\n" +
-                "^ @";
+                "receipt - id :"+lines.get("receipt")+"\n";
 
         ch = connections.send(connectionId,msg_out);
         if (ch.equals("GOOD"))
@@ -594,17 +662,17 @@ public class StompMessagingProtocolIMPL implements StompMessagingProtocol<String
     public void errorMSG(String receipt,String errorMSG,String message,String detail)
     {
         String msg_out ="ERROR\n";
-        if(!receipt.equals("")) {
+
+        if(!receipt.equals(""))
             msg_out = msg_out + "receipt-id: " + receipt + "\n";
-        }
-            msg_out= msg_out+ "message: " + errorMSG + "\n"+"\n";
-        if(!message.equals("")){
-            msg_out= msg_out+ "The message:\n" +"----\n"+ message+"+"+"----\n";
-        }
-        if(!detail.equals("")){
+
+        msg_out= msg_out+ "message: "+errorMSG+"\n\n";
+
+        if(!message.equals(""))
+            msg_out= msg_out+ "The message:\n" +"----\n"+ message+"\n----\n";
+
+        if(!detail.equals(""))
             msg_out= msg_out+ detail+"\n";
-        }
-        msg_out= msg_out+"^@";
 
         connections.send(connectionId,msg_out);
         shouldTerminate= true;

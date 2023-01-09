@@ -1,6 +1,7 @@
 package bgu.spl.net.impl.stomp;
 import bgu.spl.net.api.*;
 
+import javax.swing.*;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
@@ -23,7 +24,8 @@ public class StompEncoderDecoder implements MessageEncoderDecoder<String>{
 
     @Override
     public byte[] encode(String message) {
-        return (message + '\u0000').getBytes(); //uses utf8 by default
+        String out =message+"\n"+"b"+"\n"+'\u0000';
+        return (out).getBytes(); //uses utf8 by default
     }
 
     private void pushByte(byte nextByte) {
@@ -39,6 +41,6 @@ public class StompEncoderDecoder implements MessageEncoderDecoder<String>{
         //this is not actually required as it is the default encoding in java.
         String result = new String(bytes, 0, len, StandardCharsets.UTF_8);
         len = 0;
-        return result;
+        return result+'\u0000';
     }
 }
