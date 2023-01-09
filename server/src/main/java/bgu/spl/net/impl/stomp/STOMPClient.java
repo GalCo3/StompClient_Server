@@ -98,8 +98,39 @@ public class STOMPClient {
                 line = in.readLine();
                 System.out.println(line);
             }
+            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            out1 =
+                    "UNSUBSCRIBE\n" +
+                            "id :17\n" +
+                            "receipt :82\n";
 
+            out1+="\n"+'\u0000';
+            out.write(out1);
+            out.flush();
 
+            System.out.println("awaiting response");
+            line= "";
+
+            while (!line.equals("b")){
+                line = in.readLine();
+                System.out.println(line);
+            }
+            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            out1 =
+                    "DISCONNECT\n" +
+                    "receipt :77\n";
+
+            out1+="\n"+'\u0000';
+            out.write(out1);
+            out.flush();
+
+            System.out.println("awaiting response");
+            line= "";
+
+            while (!line.equals("b")){
+                line = in.readLine();
+                System.out.println(line);
+            }
         } catch (UnknownHostException e) {
             throw new RuntimeException(e);
         } catch (IOException e) {

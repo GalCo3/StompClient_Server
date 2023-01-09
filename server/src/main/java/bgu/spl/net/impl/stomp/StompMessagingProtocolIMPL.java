@@ -507,7 +507,7 @@ public class StompMessagingProtocolIMPL implements StompMessagingProtocol<String
             if (pair.equals("") && (i == pairs.length-2 | i==0))
                 continue;
 
-            if (pair.equals("\0000"))
+            if (pair.equals("\u0000"))
                 break;
 
             if (!pair.contains(":"))
@@ -561,7 +561,7 @@ public class StompMessagingProtocolIMPL implements StompMessagingProtocol<String
         }
 
         String ch =connections.unsubscribe(connectionId,Integer.parseInt(lines.get("id")));
-        if (!connections.unsubscribe(connectionId,Integer.parseInt(lines.get("id"))).equals("GOOD"))
+        if (!ch.equals("GOOD"))
         {
             errorMSG("","unsubscribe problem",msg,ch);
             return;
@@ -569,9 +569,7 @@ public class StompMessagingProtocolIMPL implements StompMessagingProtocol<String
 
         String msg_out =
                 "RECEIPT\n" +
-                        "receipt-id:"+lines.get("receipt")+"\n" +
-                        "\n" +
-                        "^@";
+                        "receipt-id:"+lines.get("receipt")+"\n";
 
         ch = connections.send(connectionId,msg_out);
         if (!ch.equals("GOOD"))
@@ -640,22 +638,16 @@ public class StompMessagingProtocolIMPL implements StompMessagingProtocol<String
             return;
         }
 
-        String ch =connections.disconnect(connectionId);
+        String msg_out = "RECEIPT\n" +
+                "receipt - id :"+lines.get("receipt")+"\n";
+
+        String ch =connections.disconnect(connectionId,msg_out);
         if (!ch.equals("GOOD"))
         {
             errorMSG("","disconnect problem",msg,ch);
             return;
         }
 
-
-        String msg_out = "RECEIPT\n" +
-                "receipt - id :"+lines.get("receipt")+"\n";
-
-        ch = connections.send(connectionId,msg_out);
-        if (ch.equals("GOOD"))
-            shouldTerminate = true;
-        else
-            errorMSG("","send problem",msg,ch);
 
     }
 

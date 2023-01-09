@@ -119,9 +119,9 @@ public class ConnectionsIMPL<T> implements Connections<T> {
 
 
     @Override
-    public String disconnect(int connectionId) {
+    public String disconnect(int connectionId,T msg) {
 
-        if (users_cond.containsKey(connectionId))
+        if (!users_cond.containsKey(connectionId))
             return "User with such connection id does not exist";
 
         if (!users_cond.get(connectionId))
@@ -132,6 +132,9 @@ public class ConnectionsIMPL<T> implements Connections<T> {
             list.removeIf(point -> point.x == (connectionId));
         }
 
+        String send = send(connectionId,msg);
+        if (!send.equals("GOOD"))
+            return send;
         users_cond.put(connectionId,false);
         clients_ConnectionHandler.remove(connectionId);
         return "GOOD";

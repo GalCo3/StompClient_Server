@@ -10,7 +10,7 @@ public interface Connections<T> {
 
     String send(String channel, T msg);
 
-    String disconnect(int connectionId);
+    String disconnect(int connectionId,T msg);
 
     String connect(String user_name, String password, int connectionId);
 
