@@ -8,6 +8,9 @@ import bgu.spl.net.srv.ConnectionsIMPL;
 import java.net.Socket;
 import java.util.Map;
 import java.util.WeakHashMap;
+import java.awt.*;
+import java.util.*;
+import java.util.List;
 
 public class StompMessagingProtocolIMPL implements StompMessagingProtocol<String> {
 
@@ -381,10 +384,44 @@ public class StompMessagingProtocolIMPL implements StompMessagingProtocol<String
         int i1 = msg.indexOf("user");
         int i2 = msg.indexOf("\u0000") -1;
         String msg_out = msg.substring(i1,i2);
-        String ch = connections.send(lines.get("destination"),msg_out);
+
+        msg_out = 
+                // "MESSAGE\n"+
+                // "subscription:\n"+
+                // "message - id:"+connections.getMessageId()+"\n"+
+                "destination:"+lines.get("destination")+"\n"+
+                msg_out;
+
+        String ch = connections.send(lines.get("destination"));
 
         if (!ch.equals("GOOD"))
             errorMSG("","send problem",msg,ch);
+        sendForChannel(msg_out,connections.getLisIterator(lines.get("destination")));
+    }
+
+    private void sendForChannel(String msg,Iterator<Point> iter)
+    {
+        String out="";
+        Point p;
+        String ch;
+        while(iter.hasNext())
+        {
+            p = iter.next();
+            out = "MESSAGE\n"+
+            "subscription:"+p.y+"\n"+
+            "message - id:"+connections.getMessageId()+"\n\n"+msg;
+
+            ch = connections.send(p.x, out);
+
+            if (!ch.equals("GOOD"))
+                {
+                    errorMSG("","send problem",msg,ch);
+                    break;
+                }
+            
+        }
+
+        
     }
 
     public void subscribe(String msg)

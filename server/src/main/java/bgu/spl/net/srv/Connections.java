@@ -3,12 +3,15 @@ package bgu.spl.net.srv;
 //import com.sun.jdi.request.ThreadStartRequest;
 
 import java.io.IOException;
+import java.util.Iterator;
+import java.awt.*;
+import java.util.*;
 
 public interface Connections<T> {
 
     String send(int connectionId, T msg);
 
-    String send(String channel, T msg);
+    String send(String channel);
 
     String disconnect(int connectionId,T msg);
 
@@ -20,4 +23,5 @@ public interface Connections<T> {
     int getId();
 
     void create_ConnectionHandler(int clientId,ConnectionHandler<T> connectionHandler);
+    Iterator<Point> getLisIterator(String channel);
 }

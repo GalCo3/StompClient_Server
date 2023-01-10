@@ -24,7 +24,7 @@ public class StompEncoderDecoder implements MessageEncoderDecoder<String>{
 
     @Override
     public byte[] encode(String message) {
-        String out =message+"\n"+"b"+"\n"+'\u0000';
+        String out =message+"\n"+'\u0000';
         return (out).getBytes(); //uses utf8 by default
     }
 

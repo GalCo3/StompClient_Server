@@ -8,7 +8,7 @@ import java.util.List;
 public class ConnectionsIMPL<T> implements Connections<T> {
 
     private int id_counter;
-
+    private int message_id;
     private Map<Integer,ConnectionHandler> clients_ConnectionHandler; // connectionId --> ConnectionHandler
     private Map<String,List<Point>> topics; //topic ---> list of connectionId's that subscribed to this chanel <string chanel,list<connectionId,subId>>
 
@@ -21,6 +21,7 @@ public class ConnectionsIMPL<T> implements Connections<T> {
     public ConnectionsIMPL()
     {
         id_counter=0;
+        message_id=0;
         clients_ConnectionHandler = new WeakHashMap<>();
         topics = new WeakHashMap<>();
         users = new WeakHashMap<>();
@@ -43,19 +44,26 @@ public class ConnectionsIMPL<T> implements Connections<T> {
     }
 
     @Override
-    public String send(String channel, T msg) {
+    public String send(String channel) {
 
         if (!topics.containsKey(channel))
             return "Channel does not exist";
 
+        
+
+        // while (iterator.hasNext())
+        // {
+        //     clients_ConnectionHandler.get(iterator.next().x).send(msg);
+        // }
+        return "GOOD";
+    }
+
+    public Iterator<Point> getLisIterator(String channel)
+    {
+    
         List ids = topics.get(channel);
         Iterator<Point> iterator = ids.iterator();
-
-        while (iterator.hasNext())
-        {
-            clients_ConnectionHandler.get(iterator.next().x).send(msg);
-        }
-        return "GOOD";
+        return iterator;
     }
     @Override
     public String subscribe(String channel,int connectionId,int subId)
@@ -154,7 +162,10 @@ public class ConnectionsIMPL<T> implements Connections<T> {
     public int getId() {
         return id_counter++;
     }
-
+    public int getMessageId()
+    {
+        return message_id++;
+    }
     @Override
     public String connect(String user_name, String password,int connectionId) {
         if (users_cond.containsKey(connectionId) &&users_cond.get(connectionId))

@@ -11,8 +11,15 @@ using std::string;
 ConnectionHandler::ConnectionHandler(string host, short port) : host_(host), port_(port), io_service_(),
                                                                 socket_(io_service_) {}
 
+ConnectionHandler::ConnectionHandler():host_(""),port_(-1), io_service_(),socket_(io_service_){}
 ConnectionHandler::~ConnectionHandler() {
 	close();
+}
+
+void ConnectionHandler::start(std::string host,short port)
+{
+	host_ = host;
+	port_ = port;
 }
 
 bool ConnectionHandler::connect() {
@@ -65,11 +72,11 @@ bool ConnectionHandler::sendBytes(const char bytes[], int bytesToWrite) {
 }
 
 bool ConnectionHandler::getLine(std::string &line) {
-	return getFrameAscii(line, '\n');
+	return getFrameAscii(line, '\0');
 }
 
 bool ConnectionHandler::sendLine(std::string &line) {
-	return sendFrameAscii(line, '\n');
+	return sendFrameAscii(line, '\0');
 }
 
 
@@ -101,6 +108,8 @@ bool ConnectionHandler::sendFrameAscii(const std::string &frame, char delimiter)
 // Close down the connection properly.
 void ConnectionHandler::close() {
 	try {
+		host_="";
+		port_=-1; //reset port
 		socket_.close();
 	} catch (...) {
 		std::cout << "closing failed: connection already closed" << std::endl;
