@@ -32,4 +32,5 @@ public:
     std::string getLastCommand(); 
     void reset();
     ConnectionHandler* getConnection();
+    bool is_Connected();
 };

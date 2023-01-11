@@ -3,15 +3,13 @@
 #include <iostream>
 #include <fstream>
 
-void Task::keyboard(StompProtocol &s)
+Task::Task(std::mutex &mutex,StompProtocol& stomp):_mutex(mutex),s(stomp)
+{}
+
+void Task::keyboard()
 {
-    int counter = 0;
 	while(1)
 	{
-
-    if(counter ==1)
-        s.connect();
-
 	const short bufsize = 1024;
 	char buf[bufsize];
 	std::cin.getline(buf, bufsize);
@@ -27,7 +25,10 @@ void Task::keyboard(StompProtocol &s)
 		std::string::size_type pos = ans[i].find(' ');
 		if(ans[i].substr(0,pos).find("error")!=std::string::npos)
 		{
+			std::cout<<ans[i]+"\n" <<std::endl;
+			_mutex.try_lock();
 			s.reset();
+			_mutex.unlock();
 			stop = true;
 		}
 		else
@@ -35,22 +36,69 @@ void Task::keyboard(StompProtocol &s)
 			if (!s.getConnection()->sendLine(ans[i])) 
 			{
                std::cout << "Disconnected. Exiting...\n" << std::endl;
+			   s.reset();
                break;
 			}
         }
 		}
-        //////////////////////////////////////// not suppose to be here
+	}
+}
 
-        std::string answer;
-        // Get back an answer: by using the expected number of bytes (len bytes + newline delimiter)
-        // We could also use: connectionHandler.getline(answer) and then get the answer without the newline char at the end
+void Task::socket()
+{
+	while(1)
+	{
+		if (s.is_Connected())
+		{
+			std::string answer;
+        	// Get back an answer: by using the expected number of bytes (len bytes + newline delimiter)
+     		// We could also use: connectionHandler.getline(answer) and then get the answer without the newline char at the end
 
-        if (!s.getConnection()->getLine(answer)) {
-            std::cout << "Disconnected. Exiting...\n" << std::endl;
-            break;
-        }
-        std::cout <<answer;
-
-        ++counter;
+        	if (!s.getConnection()->getLine(answer)) {
+				std::cout << "Disconnected. Exiting...\n" << std::endl;
+				_mutex.try_lock();
+				s.reset();
+				_mutex.unlock();
+				// break;
+        	}
+        	// std::cout <<answer;
+			std::string::size_type pos = answer.find('\n');
+			std::string action= answer.substr(0,pos);
+			std::string last = s.getLastCommand();
+			pos = last.find(' ');
+			if(action == "CONNECTED" && last.substr(0,pos) == "connect")
+				std::cout << "Login successful\n" << std::endl;
+			else if (action =="RECEIPT" && last.substr(0,pos) == "join") 
+			{
+				std::cout << "Joined channel " + last.substr(pos+1)+"\n" << std::endl;
+			}
+			else if (action == "RECEIPT" && last.substr(0,pos)=="exit")
+			{
+				std::cout << "Exited channel " + last.substr(pos+1)+"\n" << std::endl;
+			}
+			else if (action == "MESSAGE" && last == "summary")
+			{
+				
+			}
+			
+			else if (action == "RECEIPT" && last.substr(0,pos) == "logout")
+			{
+				std::cout << "logged out\n" << std::endl;
+				s.reset();
+			}
+			else if (action == "ERROR")
+			{
+				s.reset();
+				std::cout << answer << std::endl;
+				std::cout << "forced logged out\n" << std::endl;
+			}
+			
+			else
+				std::cout << answer << std::endl;
+			
+			std::cout << "---------------------------------" << std::endl;
+		}
+		
+		
 	}
 }

@@ -11,7 +11,7 @@ public interface Connections<T> {
 
     String send(int connectionId, T msg);
 
-    String send(String channel);
+    String send(String channel, int connectionId);
 
     String disconnect(int connectionId,T msg);
 

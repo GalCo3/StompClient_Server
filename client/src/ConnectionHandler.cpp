@@ -23,8 +23,8 @@ void ConnectionHandler::start(std::string host,short port)
 }
 
 bool ConnectionHandler::connect() {
-	std::cout << "Starting connect to "
-	          << host_ << ":" << port_ << std::endl;
+	// std::cout << "Starting connect to "
+	//           << host_ << ":" << port_ << std::endl;
 	try {
 		tcp::endpoint endpoint(boost::asio::ip::address::from_string(host_), port_); // the server endpoint
 		boost::system::error_code error;
@@ -33,7 +33,7 @@ bool ConnectionHandler::connect() {
 			throw boost::system::system_error(error);
 	}
 	catch (std::exception &e) {
-		std::cerr << "Connection failed (Error: " << e.what() << ')' << std::endl;
+		std::cerr << "Could not connect to server" << std::endl;
 		return false;
 	}
 	return true;

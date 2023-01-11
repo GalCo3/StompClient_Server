@@ -14,7 +14,8 @@ public class ConnectionsIMPL<T> implements Connections<T> {
 
     //Maps for users
     private Map<String,String> users; //<username,password>
-    private Map<Integer,Boolean> users_cond; //if connected or not  //<connectionId,isConnected>
+    private Map<String,Boolean> users_cond; //if connected or not  //<username,isConnected>
+    private Map<Integer,String> user_conId; // <ConnectionId,username>
 
 
 
@@ -26,6 +27,7 @@ public class ConnectionsIMPL<T> implements Connections<T> {
         topics = new WeakHashMap<>();
         users = new WeakHashMap<>();
         users_cond = new WeakHashMap<>();
+        user_conId = new WeakHashMap<>();
     }
 
     public void create_ConnectionHandler(int clientId,ConnectionHandler connectionHandler)
@@ -44,12 +46,13 @@ public class ConnectionsIMPL<T> implements Connections<T> {
     }
 
     @Override
-    public String send(String channel) {
+    public String send(String channel,int connectionId) {
 
         if (!topics.containsKey(channel))
             return "Channel does not exist";
 
-        
+        if(!isContainsX(topics.get(channel), connectionId))
+            return "User is not subscried to this channel";
 
         // while (iterator.hasNext())
         // {
@@ -68,11 +71,11 @@ public class ConnectionsIMPL<T> implements Connections<T> {
     @Override
     public String subscribe(String channel,int connectionId,int subId)
     {
-        if (!users_cond.containsKey(connectionId))
+        if (!users_cond.containsKey(user_conId.get(connectionId)))
             // user with such connectionId does not exist
             return "User with such connection id does not exist";
 
-        if (!users_cond.get(connectionId))
+        if (!users_cond.get(user_conId.get(connectionId)))
             // user is disconnected
             return "User is disconnected already";
 
@@ -93,14 +96,13 @@ public class ConnectionsIMPL<T> implements Connections<T> {
     @Override
     public String unsubscribe(int connectionId,int subId)
     {
-        if (!users_cond.containsKey(connectionId))
+        if (!users_cond.containsKey(user_conId.get(connectionId)))
             return "User with such connection id does not exist";
 
-        if (!users_cond.get(connectionId))
+        if (!users_cond.get(user_conId.get(connectionId)))
             return "User is disconnected already";
 
         Point check = new Point(connectionId,subId);
-        boolean deleted = false;
 
         for (List <Point> list: topics.values())
         {
@@ -129,10 +131,10 @@ public class ConnectionsIMPL<T> implements Connections<T> {
     @Override
     public String disconnect(int connectionId,T msg) {
 
-        if (!users_cond.containsKey(connectionId))
+        if (!users_cond.containsKey(user_conId.get(connectionId)))
             return "User with such connection id does not exist";
 
-        if (!users_cond.get(connectionId))
+        if (!users_cond.get(user_conId.get(connectionId)))
             return "User is disconnected already";
 
         for (List<Point> list: topics.values())
@@ -143,7 +145,8 @@ public class ConnectionsIMPL<T> implements Connections<T> {
         String send = send(connectionId,msg);
         if (!send.equals("GOOD"))
             return send;
-        users_cond.put(connectionId,false);
+        users_cond.put(user_conId.get(connectionId),false);
+        user_conId.remove(connectionId);
         clients_ConnectionHandler.remove(connectionId);
         return "GOOD";
     }
@@ -155,7 +158,8 @@ public class ConnectionsIMPL<T> implements Connections<T> {
             list.removeIf(point -> point.x == (connectionId));
         }
 
-        users_cond.put(connectionId,false);
+        users_cond.put(user_conId.get(connectionId),false);
+        user_conId.remove(connectionId);
         clients_ConnectionHandler.remove(connectionId);
     }
 
@@ -166,17 +170,19 @@ public class ConnectionsIMPL<T> implements Connections<T> {
     {
         return message_id++;
     }
+
     @Override
     public String connect(String user_name, String password,int connectionId) {
-        if (users_cond.containsKey(connectionId) &&users_cond.get(connectionId))
+        if (users_cond.containsKey(user_name) &&users_cond.get(user_name))
             //user is already connected
-            return "User is already connected";
+            return "User already logged in";
 
         if (users.containsKey(user_name))
             //user already exist
             if (users.get(user_name).equals(password))
                 {
-                    users_cond.put(connectionId,true);
+                    users_cond.put(user_name,true);
+                    user_conId.put(connectionId, user_name);
                     return "GOOD";
                 }
             else
@@ -187,7 +193,8 @@ public class ConnectionsIMPL<T> implements Connections<T> {
         {
             //new user
             users.put(user_name,password);
-            users_cond.put(connectionId,true);
+            users_cond.put(user_name,true);
+            user_conId.put(connectionId, user_name);
             return "GOOD";
         }
     }

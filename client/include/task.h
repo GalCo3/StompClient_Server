@@ -4,6 +4,11 @@
 class Task
 {
     private:
+        std::mutex &_mutex;
+        StompProtocol &s;
     public:
-        void keyboard(StompProtocol &s);
+        Task(std::mutex &mutex,StompProtocol &s);
+        void keyboard();
+        void socket();
+
 };

@@ -392,10 +392,11 @@ public class StompMessagingProtocolIMPL implements StompMessagingProtocol<String
                 "destination:"+lines.get("destination")+"\n"+
                 msg_out;
 
-        String ch = connections.send(lines.get("destination"));
+        String ch = connections.send(lines.get("destination"),connectionId);
 
         if (!ch.equals("GOOD"))
-            errorMSG("","send problem",msg,ch);
+            {errorMSG("","send problem",msg,ch);
+            return;}
         sendForChannel(msg_out,connections.getLisIterator(lines.get("destination")));
     }
 
@@ -515,7 +516,7 @@ public class StompMessagingProtocolIMPL implements StompMessagingProtocol<String
         }
 
         String msg_out = "RECEIPT\n" +
-                "receipt-id:"+lines.get("id")+"\n";
+                "receipt-id:"+lines.get("receipt")+"\n";
 
         ch =connections.send(connectionId,msg_out);
         if(!ch.equals("GOOD"))
@@ -690,6 +691,8 @@ public class StompMessagingProtocolIMPL implements StompMessagingProtocol<String
 
     public void errorMSG(String receipt,String errorMSG,String message,String detail)
     {
+        int index = message.indexOf('\u0000');
+        message = message.substring(0, index);
         String msg_out ="ERROR\n";
 
         if(!receipt.equals(""))

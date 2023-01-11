@@ -25,8 +25,7 @@ std::vector<std::string> StompProtocol::execute(std::string frame)
     {
         if (action != "login")
         {
-            queue.push("error");
-            out.push_back("error msg");
+            out.push_back("error - User is not logged in");
             return out;
         }
         
@@ -69,7 +68,7 @@ std::vector<std::string> StompProtocol::execute(std::string frame)
         out.push_back(disconnect(frame));
         return out;
     }
-    queue.push("error");
+    // queue.push("error");
     out.push_back("error msg");
     return out;
 }
@@ -120,15 +119,15 @@ std::string StompProtocol::connect(std::string frame)
     std::string out("CONNECT\naccept - version:1.2\nhost:stomp . cs . bgu . ac . il\nlogin:"+ username+
     "\npasscode:"+frame+"\n\n");
     
-    std::cout << out;
+    // std::cout << out;
     con.start(host,stoi(port));
     con.connect();
+    isConnected = true;
     return out;
 }
 
 std::string StompProtocol::subcscribe(std::string frame)
 {
-    queue.push("join "+frame);
     bool found = frame.find('_') != std::string::npos;
     if (!found)
     {
@@ -140,15 +139,15 @@ std::string StompProtocol::subcscribe(std::string frame)
 
     receiptId = receiptId+1;
     game_subId[frame] = subId;
+    queue.push("join "+frame);
     subId = subId+1;
-    std::cout << out;
+    // std::cout << out;
     return out;
 
 }
 
 std::string StompProtocol::unsubscribe(std::string frame)
 {
-    queue.push("exit "+frame);
     bool found = frame.find('_') != std::string::npos;
     if (!found)
     {
@@ -156,21 +155,21 @@ std::string StompProtocol::unsubscribe(std::string frame)
         return "error not legal game name";
     }
 
-    if(game_subId.find(frame) == game_subId.end())
-    {
-        //error
-        return "error not a memeber of channel - "+frame;
-    }
+    // if(game_subId.find(frame) == game_subId.end())
+    // {
+    //     //error
+    //     return "error not a memeber of channel - "+frame;
+    // }
 
     std::string out("UNSUBSCRIBE\nid:"+std::to_string(game_subId[frame])+"\nreceipt:"+std::to_string(receiptId)+"\n\n");
     receiptId = receiptId+1;
-    std::cout << out;
+    queue.push("exit "+frame);
+    // std::cout << out;
     return out;
 }
 
 std::string StompProtocol::disconnect(std::string frame)
 {
-    queue.push("logout");
     if (frame != "logout")
     {
         //error
@@ -179,13 +178,13 @@ std::string StompProtocol::disconnect(std::string frame)
     
     std::string out("DISCONNECT\nreceipt:"+std::to_string(receiptId)+"\n\n");
     receiptId = receiptId+1;
-    std::cout << out;
+    queue.push("logout");
+    // std::cout << out;
     return out;
 }
 
 std::vector<std::string> StompProtocol::send(std::string frame)
 {
-    queue.push("send");
     std::vector<std::string>ans =std::vector<std::string>();
     bool found = frame.find(".json") != std::string::npos;
     if (!found)
@@ -201,6 +200,7 @@ std::vector<std::string> StompProtocol::send(std::string frame)
     std::string msg="";
     for(unsigned int i = 0; i < vecSize; i++)
     {
+        queue.push("send");
         msg=
         "SEND\ndestination:"+events1.team_a_name+"_"+events1.team_b_name+"\n\n"
 
@@ -216,7 +216,7 @@ std::vector<std::string> StompProtocol::send(std::string frame)
 
         while (it != map1.end())
         {
-            msg = msg+"\t"+it->first+": "+it->second;
+            msg = msg+"\t"+it->first+": "+it->second+"\n";
             ++it;
         }
 
@@ -240,7 +240,7 @@ std::vector<std::string> StompProtocol::send(std::string frame)
             ++it;
         }
         msg = msg+"description:\n" + events1.events[i].get_discription()+"\n";
-        std::cout << msg;
+        // std::cout << msg;
         ans.push_back(msg);
     }
     return ans;   
@@ -312,7 +312,12 @@ void StompProtocol::reset()
     subId=0;
     receiptId =0;
     isConnected=false;
-    queue = std::queue<std::string>(); //new empty queue
+    while (!queue.empty())
+    {
+        queue.pop();
+    }
+    
+    // queue = std::queue<std::string>(); //new empty queue
     userName = "";
     con.close();
     game_subId=std::map<std::string, int>(); //new Map
@@ -322,3 +327,5 @@ ConnectionHandler* StompProtocol::getConnection()
 {
     return &con;
 }
+
+bool StompProtocol::is_Connected(){ return isConnected;}
