@@ -9,9 +9,9 @@ using std::ofstream;
 
 
 
-StompProtocol::StompProtocol(std::map<std::pair<std::string,std::string>,std::vector<Event>> *_summeryMap):
+StompProtocol::StompProtocol():
 subId(0),receiptId(0),
-isConnected(false),userName(""),game_subId(),summeryMap(*_summeryMap),queue(),con()
+isConnected(false),userName(""),game_subId(),summeryMap(),queue(),con()
 {}
 std::vector<std::string> StompProtocol::execute(std::string frame)
 {
@@ -318,6 +318,7 @@ void StompProtocol::reset()
     userName = "";
     con.close();
     game_subId=std::map<std::string, int>(); //new Map
+    summeryMap = std::map<std::pair<std::string,std::string>,std::vector<Event>>();
 }
 
 ConnectionHandler* StompProtocol::getConnection()
@@ -327,4 +328,7 @@ ConnectionHandler* StompProtocol::getConnection()
 
 bool StompProtocol::is_Connected(){ return isConnected;}
 
-void Stomp
+void StompProtocol::addMessage(std::pair<std::string,std::string> user_game,Event event)
+{
+    summeryMap[user_game].push_back(event);
+}

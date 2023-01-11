@@ -61,8 +61,95 @@ const std::string &Event::get_discription() const
     return this->description;
 }
 
-Event::Event(const std::string &frame_body) : team_a_name(""), team_b_name(""), name(""), time(0), game_updates(), team_a_updates(), team_b_updates(), description("")
+Event::Event(std::string frame_body) : team_a_name(""), team_b_name(""), name(""), time(0), game_updates(), team_a_updates(), team_b_updates(), description("")
 {
+    std::string::size_type pos = frame_body.find(':');
+    team_a_name = frame_body.substr(pos+2);
+    std::string::size_type pos1 = team_a_name.find('\n');
+    team_a_name = team_a_name.substr(0,pos1);
+
+	pos1 = frame_body.find('\n');
+    frame_body = frame_body.substr(pos1+1);
+    //////////////////////////////////////////////////////
+    pos = frame_body.find(':');
+    team_b_name = frame_body.substr(pos+2);
+    pos1 = team_b_name.find('\n');
+    team_b_name = team_b_name.substr(0,pos1);
+
+	pos1 = frame_body.find('\n');
+    frame_body = frame_body.substr(pos1+1);
+    //////////////////////////////////////////////////////
+    pos = frame_body.find(':');
+    name= frame_body.substr(pos+2);
+    pos1 = name.find('\n');
+    name = name.substr(0,pos1);
+
+	pos1 = frame_body.find('\n');
+    frame_body = frame_body.substr(pos1+1);
+    //////////////////////////////////////////////////////
+    pos = frame_body.find(':');
+    std::string key;
+    key= frame_body.substr(pos+2);
+    pos1 = key.find('\n');
+    key = key.substr(0,pos1);
+    time = stoi(key);
+
+	pos1 = frame_body.find('\n');
+    frame_body = frame_body.substr(pos1+1);
+    //////////////////////////////////////////////////////
+    pos1 = frame_body.find('\n');
+    frame_body = frame_body.substr(pos1+1);
+    std::string val;
+    std::string temp;
+    while (frame_body.at(0) == '\t')
+    {
+        pos = frame_body.find('\n');
+        temp = frame_body.substr(1,pos-1);
+        frame_body = frame_body.substr(pos+1);
+
+        pos = temp.find(':');
+        key = temp.substr(0,pos);
+        val = temp.substr(pos+2);
+
+        game_updates[key]= val;
+    }
+    
+    //////////////////////////////////////////////////////
+    pos1 = frame_body.find('\n');
+    frame_body = frame_body.substr(pos1+1);
+    while (frame_body.at(0) == '\t')
+    {
+        pos = frame_body.find('\n');
+        temp = frame_body.substr(1,pos-1);
+        frame_body = frame_body.substr(pos+1);
+
+        pos = temp.find(':');
+        key = temp.substr(0,pos);
+        val = temp.substr(pos+2);
+
+        team_a_updates[key]= val;
+    }
+    //////////////////////////////////////////////////////
+    pos1 = frame_body.find('\n');
+    frame_body = frame_body.substr(pos1+1);
+    while (frame_body.at(0) == '\t')
+    {
+        pos = frame_body.find('\n');
+        temp = frame_body.substr(1,pos-1);
+        frame_body = frame_body.substr(pos+1);
+
+        pos = temp.find(':');
+        key = temp.substr(0,pos);
+        val = temp.substr(pos+2);
+
+        team_b_updates[key]= val;
+    }
+    //////////////////////////////////////////////////////
+    pos1 = frame_body.find('\n');
+    frame_body = frame_body.substr(pos1+1);
+    pos1 = frame_body.find('\n');
+    description =frame_body.substr(0,pos1);
+    
 }
 
 names_and_events parseEventsFile(std::string json_path)

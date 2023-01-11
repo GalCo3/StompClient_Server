@@ -66,6 +66,7 @@ void Task::socket()
 			else if (action =="RECEIPT") 
 			{
 				last = s.getLastCommand();
+				pos = last.find(' ');
 				if (last.substr(0,pos) == "join")
 				{
 					std::cout << "Joined channel " + last.substr(pos+1)+"\n" << std::endl;
@@ -84,16 +85,27 @@ void Task::socket()
 			{
 				std::string::size_type pos1 = answer.find("destination:");
 				std::string gameDest = answer.substr(pos1);
+				pos1 = gameDest.find(':');
+				gameDest = gameDest.substr(pos1+1);
 				pos1 = gameDest.find('\n');
-				gameDest = gameDest.substr(0,pos);
+				gameDest = gameDest.substr(0,pos1);
 
 				pos1 = answer.find("user:");
-				std::string user = answer.substr(pos1);
+				std::string user = answer.substr(pos1+1);
+				pos1 = user.find(':');
+				user = user.substr(pos1+1);
 				pos1 = user.find('\n');
-				user = user.substr(0,pos);
+				user = user.substr(0,pos1);
 
+				///build event//
+				pos1 = answer.find("user:");
+				std::string toEvent = answer.substr(pos1);
+				pos1 = toEvent.find('\n');
+				toEvent = toEvent.substr(pos1+1);
+
+				s.addMessage(std::pair<std::string,std::string>(user,gameDest),Event(toEvent));
 				////////to sync/////
-					
+				std::cout<<answer <<std::endl;
 			}
 			else if (action == "ERROR")
 			{

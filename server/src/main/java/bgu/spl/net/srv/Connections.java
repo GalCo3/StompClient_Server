@@ -24,4 +24,5 @@ public interface Connections<T> {
 
     void create_ConnectionHandler(int clientId,ConnectionHandler<T> connectionHandler);
     Iterator<Point> getLisIterator(String channel);
+    void forceDisconnect(int connectionId);
 }
