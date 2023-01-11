@@ -26,9 +26,7 @@ void Task::keyboard()
 		if(ans[i].substr(0,pos).find("error")!=std::string::npos)
 		{
 			std::cout<<ans[i]+"\n" <<std::endl;
-			_mutex.try_lock();
 			s.reset();
-			_mutex.unlock();
 			stop = true;
 		}
 		else
@@ -61,19 +59,28 @@ void Task::socket()
         	// std::cout <<answer;
 			std::string::size_type pos = answer.find('\n');
 			std::string action= answer.substr(0,pos);
-			std::string last = s.getLastCommand();
+			std::string last;
 			pos = last.find(' ');
-			if(action == "CONNECTED" && last.substr(0,pos) == "connect")
+			if(action == "CONNECTED")
 				std::cout << "Login successful\n" << std::endl;
-			else if (action =="RECEIPT" && last.substr(0,pos) == "join") 
+			else if (action =="RECEIPT") 
 			{
-				std::cout << "Joined channel " + last.substr(pos+1)+"\n" << std::endl;
+				last = s.getLastCommand();
+				if (last.substr(0,pos) == "join")
+				{
+					std::cout << "Joined channel " + last.substr(pos+1)+"\n" << std::endl;
+				}
+				else if (last.substr(0,pos)=="exit")
+				{					
+					std::cout << "Exited channel " + last.substr(pos+1)+"\n" << std::endl;
+				}
+				else if (last.substr(0,pos) == "logout")
+				{
+					std::cout << "logged out\n" << std::endl;
+					s.reset();
+				}
 			}
-			else if (action == "RECEIPT" && last.substr(0,pos)=="exit")
-			{
-				std::cout << "Exited channel " + last.substr(pos+1)+"\n" << std::endl;
-			}
-			else if (action == "MESSAGE" && last == "summary")
+			else if (action == "MESSAGE")
 			{
 				std::string::size_type pos1 = answer.find("destination:");
 				std::string gameDest = answer.substr(pos1);
@@ -85,13 +92,8 @@ void Task::socket()
 				pos1 = user.find('\n');
 				user = user.substr(0,pos);
 
-				
-			}
-			
-			else if (action == "RECEIPT" && last.substr(0,pos) == "logout")
-			{
-				std::cout << "logged out\n" << std::endl;
-				s.reset();
+				////////to sync/////
+					
 			}
 			else if (action == "ERROR")
 			{

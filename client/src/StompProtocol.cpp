@@ -75,7 +75,7 @@ std::vector<std::string> StompProtocol::execute(std::string frame)
 
 std::string StompProtocol::connect(std::string frame)
 {
-    queue.push("connect");
+    
     bool found = frame.find(' ') != std::string::npos;
     if(!found)
         //error
@@ -200,7 +200,7 @@ std::vector<std::string> StompProtocol::send(std::string frame)
     std::string msg="";
     for(unsigned int i = 0; i < vecSize; i++)
     {
-        queue.push("send");
+    
         msg=
         "SEND\ndestination:"+events1.team_a_name+"_"+events1.team_b_name+"\n\n"
 
@@ -248,7 +248,6 @@ std::vector<std::string> StompProtocol::send(std::string frame)
 
 void StompProtocol::summary(std::string frame)
 {
-    queue.push("summary");
     std::string::size_type pos = frame.find(' ');
     bool found = pos != std::string::npos;
     if(!found)
@@ -284,10 +283,8 @@ void StompProtocol::summary(std::string frame)
         return;
     }
     //frame holds the file name
-    std::vector<Event> events  = summeryMap[std::pair<std::string,std::string>(user,gameName)];
-
+    std::vector<Event>& events  = summeryMap[std::pair<std::string,std::string>(user,gameName)];
     // events[events.size()]
-    
 }
 
 void StompProtocol::connect()
@@ -329,3 +326,5 @@ ConnectionHandler* StompProtocol::getConnection()
 }
 
 bool StompProtocol::is_Connected(){ return isConnected;}
+
+void Stomp

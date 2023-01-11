@@ -33,5 +33,5 @@ public:
     void reset();
     ConnectionHandler* getConnection();
     bool is_Connected();
-    void addMessage(/* Event*/);
+    void addMessage(std::pair<std::string,std::string> user_game);
 };

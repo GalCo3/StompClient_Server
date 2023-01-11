@@ -3,13 +3,14 @@ package bgu.spl.net.srv;
 import java.awt.*;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 public class ConnectionsIMPL<T> implements Connections<T> {
 
     private int id_counter;
     private int message_id;
-    private Map<Integer,ConnectionHandler> clients_ConnectionHandler; // connectionId --> ConnectionHandler
+    private Map<Integer,ConnectionHandler<T>> clients_ConnectionHandler; // connectionId --> ConnectionHandler
     private Map<String,List<Point>> topics; //topic ---> list of connectionId's that subscribed to this chanel <string chanel,list<connectionId,subId>>
 
     //Maps for users
@@ -23,14 +24,14 @@ public class ConnectionsIMPL<T> implements Connections<T> {
     {
         id_counter=0;
         message_id=0;
-        clients_ConnectionHandler = new WeakHashMap<>();
-        topics = new WeakHashMap<>();
-        users = new WeakHashMap<>();
-        users_cond = new WeakHashMap<>();
-        user_conId = new WeakHashMap<>();
+        clients_ConnectionHandler = new ConcurrentHashMap<>();
+        topics = new ConcurrentHashMap<>();
+        users = new ConcurrentHashMap<>();
+        users_cond = new ConcurrentHashMap<>();
+        user_conId = new ConcurrentHashMap<>();
     }
 
-    public void create_ConnectionHandler(int clientId,ConnectionHandler connectionHandler)
+    public void create_ConnectionHandler(int clientId,ConnectionHandler<T> connectionHandler)
     {
         clients_ConnectionHandler.put(clientId,connectionHandler);
     }
@@ -64,7 +65,7 @@ public class ConnectionsIMPL<T> implements Connections<T> {
     public Iterator<Point> getLisIterator(String channel)
     {
     
-        List ids = topics.get(channel);
+        List<Point> ids = topics.get(channel);
         Iterator<Point> iterator = ids.iterator();
         return iterator;
     }
