@@ -56,10 +56,7 @@ void Task::socket()
 
         	if (!s.getConnection()->getLine(answer)) {
 				std::cout << "Disconnected. Exiting...\n" << std::endl;
-				_mutex.try_lock();
 				s.reset();
-				_mutex.unlock();
-				// break;
         	}
         	// std::cout <<answer;
 			std::string::size_type pos = answer.find('\n');
@@ -78,6 +75,16 @@ void Task::socket()
 			}
 			else if (action == "MESSAGE" && last == "summary")
 			{
+				std::string::size_type pos1 = answer.find("destination:");
+				std::string gameDest = answer.substr(pos1);
+				pos1 = gameDest.find('\n');
+				gameDest = gameDest.substr(0,pos);
+
+				pos1 = answer.find("user:");
+				std::string user = answer.substr(pos1);
+				pos1 = user.find('\n');
+				user = user.substr(0,pos);
+
 				
 			}
 			

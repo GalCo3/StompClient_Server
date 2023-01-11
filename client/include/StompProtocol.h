@@ -33,4 +33,5 @@ public:
     void reset();
     ConnectionHandler* getConnection();
     bool is_Connected();
+    void addMessage(/* Event*/);
 };
