@@ -10,6 +10,9 @@ void Task::keyboard()
 {
 	while(1)
 	{
+	if (!s.getWait())
+	{
+		
 	const short bufsize = 1024;
 	char buf[bufsize];
 	std::cin.getline(buf, bufsize);
@@ -25,9 +28,9 @@ void Task::keyboard()
 		std::string::size_type pos = ans[i].find(' ');
 		if(ans[i].substr(0,pos).find("error")!=std::string::npos)
 		{
+			stop = true;
 			std::cout<<ans[i]+"\n" <<std::endl;
 			s.reset();
-			stop = true;
 		}
 		else
 		{
@@ -39,6 +42,7 @@ void Task::keyboard()
 			}
         }
 		}
+	}
 	}
 }
 
@@ -77,6 +81,7 @@ void Task::socket()
 				}
 				else if (last.substr(0,pos) == "logout")
 				{
+					s.recived();
 					std::cout << "logged out\n" << std::endl;
 					s.reset();
 				}

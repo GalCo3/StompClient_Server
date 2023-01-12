@@ -11,7 +11,7 @@ using std::ofstream;
 
 StompProtocol::StompProtocol():
 subId(0),receiptId(0),
-isConnected(false),userName(""),game_subId(),summeryMap(),queue(),con()
+isConnected(false),waitForRecipt(false),userName(""),game_subId(),summeryMap(),queue(),con()
 {}
 std::vector<std::string> StompProtocol::execute(std::string frame)
 {
@@ -58,7 +58,7 @@ std::vector<std::string> StompProtocol::execute(std::string frame)
     {
         return send(frame);
     }
-    else if (action == "summery")
+    else if (action == "summary")
     {
         summary(frame);
         return out;
@@ -121,8 +121,12 @@ std::string StompProtocol::connect(std::string frame)
     
     // std::cout << out;
     con.start(host,stoi(port));
-    con.connect();
-    isConnected = true;
+
+    if(con.connect())
+        isConnected = true;
+    else
+        out = "error - connection problem";
+
     return out;
 }
 
@@ -179,6 +183,7 @@ std::string StompProtocol::disconnect(std::string frame)
     std::string out("DISCONNECT\nreceipt:"+std::to_string(receiptId)+"\n\n");
     receiptId = receiptId+1;
     queue.push("logout");
+    waitForRecipt = true;
     // std::cout << out;
     return out;
 }
@@ -193,6 +198,7 @@ std::vector<std::string> StompProtocol::send(std::string frame)
         ans.push_back("error not legal json file");
         return ans;
     }
+
     
     names_and_events events1=parseEventsFile(frame);
     // std::vector<Event>::iterator it;
@@ -200,6 +206,13 @@ std::vector<std::string> StompProtocol::send(std::string frame)
     std::string msg="";
     for(unsigned int i = 0; i < vecSize; i++)
     {
+        std::string gameName = events1.events[i].get_team_a_name()+"_"+events1.events[i].get_team_b_name();
+        if(game_subId.find(gameName) == game_subId.end())
+        {
+            //error
+            ans.push_back("error not a memeber of channel - "+gameName);
+            return ans;
+        }
     
         msg=
         "SEND\ndestination:"+events1.team_a_name+"_"+events1.team_b_name+"\n\n"
@@ -265,7 +278,7 @@ void StompProtocol::summary(std::string frame)
         return;
     }
     
-    pos = gameName.find(' ');
+    pos = frame.find(' ');
     found = pos != std::string::npos;
     if (!found)
     {
@@ -275,7 +288,7 @@ void StompProtocol::summary(std::string frame)
     std::string user = frame.substr(0,pos);
     frame = frame.substr(pos+1);
 
-    pos = gameName.find(".json");
+    pos = frame.find(".txt");
     found = pos != std::string::npos;
     if (!found)
     {
@@ -285,6 +298,72 @@ void StompProtocol::summary(std::string frame)
     //frame holds the file name
     std::vector<Event>& events  = summeryMap[std::pair<std::string,std::string>(user,gameName)];
     // events[events.size()]
+    std::map<std::string,std::string> m;
+    std::map<std::string,std::string> a;
+    std::map<std::string,std::string> b;
+    std::map<std::string,std::string>::iterator it;
+    
+    unsigned int vecSize = events.size();
+	
+    for(unsigned int i = 0; i < vecSize; i++)
+    {
+        auto game = events[i].get_game_updates();
+        for (it = game.begin(); it != game.end(); it++)
+        {
+            m[it->first] = it->second;
+        }
+
+        game = events[i].get_team_a_updates();
+        for (it = game.begin(); it != game.end(); it++)
+        {
+            a[it->first] = it->second;
+        }
+
+        game = events[i].get_team_b_updates();
+        for (it = game.begin(); it != game.end(); it++)
+        {
+            b[it->first] = it->second;
+        }
+    }
+
+    std::string msgOut =events.front().get_team_a_name() + " vs "+events.front().get_team_b_name()
+    +"\nGame stats:\nGeneral stats:\n";
+    
+        for (it = m.begin(); it != m.end(); it++)
+    {
+        msgOut += it->first+": "+it->second+"\n";
+    }
+
+    
+
+    msgOut+= events.front().get_team_a_name()+" stats:\n";
+    for (it = a.begin(); it != a.end(); it++)
+    {
+        msgOut += it->first+": "+it->second+"\n";
+    }
+
+    msgOut+= events.front().get_team_b_name()+" stats:\n";
+    for (it = b.begin(); it != b.end(); it++)
+    {
+        msgOut += it->first+": "+it->second+"\n";
+    }
+
+    msgOut+="Game event reports:\n";
+    for(unsigned int i = 0; i < vecSize; i++)
+    {
+        msgOut+=std::to_string(events[i].get_time())+" - " + events[i].get_name()+":\n\n";
+        msgOut+=events[i].get_discription()+"\n\n";
+    }
+
+    std::ofstream blabla(frame);
+    if (blabla.is_open())
+    {
+        blabla << msgOut;
+        blabla.close();
+        std::cout<<blabla.rdbuf();
+    }
+    
+
 }
 
 void StompProtocol::connect()
@@ -331,4 +410,14 @@ bool StompProtocol::is_Connected(){ return isConnected;}
 void StompProtocol::addMessage(std::pair<std::string,std::string> user_game,Event event)
 {
     summeryMap[user_game].push_back(event);
+}
+
+void StompProtocol::recived()
+{
+    waitForRecipt=false;
+}
+
+bool StompProtocol::getWait()
+{
+    return waitForRecipt;
 }

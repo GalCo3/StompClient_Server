@@ -1,8 +1,10 @@
 package bgu.spl.net.srv;
 
-import java.awt.*;
-import java.util.*;
+import java.awt.Point;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 
@@ -158,10 +160,14 @@ public class ConnectionsIMPL<T> implements Connections<T> {
         {
             list.removeIf(point -> point.x == (connectionId));
         }
+        
+        if(user_conId.containsKey(connectionId))
+            users_cond.put(user_conId.get(connectionId),false);
+        if(user_conId.containsKey(connectionId))
+            user_conId.remove(connectionId);
 
-        users_cond.put(user_conId.get(connectionId),false);
-        user_conId.remove(connectionId);
-        clients_ConnectionHandler.remove(connectionId);
+        if(clients_ConnectionHandler.containsKey(connectionId))
+            clients_ConnectionHandler.remove(connectionId);
     }
 
     public int getId() {

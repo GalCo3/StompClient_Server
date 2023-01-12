@@ -12,6 +12,7 @@ private:
     int subId;
     int receiptId;
     bool isConnected;
+    bool waitForRecipt;
     std::string userName;
     std::map<std::string,int> game_subId;
     std::map<std::pair<std::string,std::string>,std::vector<Event>> summeryMap; //<userName,gameName> -- > summery
@@ -34,4 +35,6 @@ public:
     ConnectionHandler* getConnection();
     bool is_Connected();
     void addMessage(std::pair<std::string,std::string> user_game,Event event);
+    void recived();
+    bool getWait();
 };
