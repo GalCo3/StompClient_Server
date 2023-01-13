@@ -36,6 +36,7 @@ std::vector<std::string> StompProtocol::execute(std::string frame)
         if (isConnected)
         {
             std::cout <<"The client is already logged in, log out before trying again";
+            return out;
         }
         else
         {
@@ -326,10 +327,11 @@ void StompProtocol::summary(std::string frame)
         }
     }
 
-    std::string msgOut =events.front().get_team_a_name() + " vs "+events.front().get_team_b_name()
-    +"\nGame stats:\nGeneral stats:\n";
+    std::string msgOut;
+    if (vecSize>0)
+        msgOut =events.front().get_team_a_name() + " vs "+events.front().get_team_b_name()+"\nGame stats:\nGeneral stats:\n";
     
-        for (it = m.begin(); it != m.end(); it++)
+    for (it = m.begin(); it != m.end(); it++)
     {
         msgOut += it->first+": "+it->second+"\n";
     }
@@ -360,7 +362,7 @@ void StompProtocol::summary(std::string frame)
     {
         blabla << msgOut;
         blabla.close();
-        std::cout<<blabla.rdbuf();
+        std::cout<<msgOut;
     }
     
 

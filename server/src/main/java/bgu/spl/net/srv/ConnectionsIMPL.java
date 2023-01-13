@@ -20,6 +20,12 @@ public class ConnectionsIMPL<T> implements Connections<T> {
     private Map<String,Boolean> users_cond; //if connected or not  //<username,isConnected>
     private Map<Integer,String> user_conId; // <ConnectionId,username>
 
+    private Object lock_clients_ConnectionHandler;
+    private Object lock_topics;
+    private Object lock_users;
+    private Object lock_users_cond;
+    private Object lock_user_conId;
+
 
 
     public ConnectionsIMPL()
@@ -31,49 +37,60 @@ public class ConnectionsIMPL<T> implements Connections<T> {
         users = new ConcurrentHashMap<>();
         users_cond = new ConcurrentHashMap<>();
         user_conId = new ConcurrentHashMap<>();
+
+        lock_clients_ConnectionHandler= new Object();
+        lock_topics= new Object();
+        lock_users=new Object() ;
+        lock_users_cond=new Object();
+        lock_user_conId=new Object();
+
     }
 
     public void create_ConnectionHandler(int clientId,ConnectionHandler<T> connectionHandler)
     {
+        synchronized(clients_ConnectionHandler){
         clients_ConnectionHandler.put(clientId,connectionHandler);
+    }
     }
 
     @Override
     public String send(int connectionId, T msg) {
+        synchronized(clients_ConnectionHandler){  
         if (clients_ConnectionHandler.containsKey(connectionId))
         {
             clients_ConnectionHandler.get(connectionId).send(msg);
             return "GOOD";
         }
         return "User with such connectionID does not exist";
+        }
     }
 
     @Override
     public String send(String channel,int connectionId) {
-
+        synchronized(lock_topics){    
         if (!topics.containsKey(channel))
             return "Channel does not exist";
 
         if(!isContainsX(topics.get(channel), connectionId))
             return "User is not subscried to this channel";
-
-        // while (iterator.hasNext())
-        // {
-        //     clients_ConnectionHandler.get(iterator.next().x).send(msg);
-        // }
+            
         return "GOOD";
+        }
     }
 
     public Iterator<Point> getLisIterator(String channel)
     {
-    
-        List<Point> ids = topics.get(channel);
-        Iterator<Point> iterator = ids.iterator();
-        return iterator;
+        synchronized(lock_topics)
+        {
+            List<Point> ids = topics.get(channel);
+            return ids.iterator();       
+        }
     }
     @Override
     public String subscribe(String channel,int connectionId,int subId)
     {
+        synchronized(lock_topics){ 
+            synchronized(lock_users_cond){ 
         if (!users_cond.containsKey(user_conId.get(connectionId)))
             // user with such connectionId does not exist
             return "User with such connection id does not exist";
@@ -94,11 +111,15 @@ public class ConnectionsIMPL<T> implements Connections<T> {
 
         check.add(new Point(connectionId,subId));
         return "GOOD";
+            }
+        }
     }
 
     @Override
     public String unsubscribe(int connectionId,int subId)
     {
+        synchronized(lock_topics){ 
+            synchronized(lock_users_cond){ 
         if (!users_cond.containsKey(user_conId.get(connectionId)))
             return "User with such connection id does not exist";
 
@@ -118,6 +139,8 @@ public class ConnectionsIMPL<T> implements Connections<T> {
 
         // error, does not subscribe to any channel
         return "Can't unsubscribe because user is not subscribe to any channel";
+            }
+         }
     }
 
     private boolean isContainsX(List<Point> p ,int connectionId)
@@ -134,40 +157,56 @@ public class ConnectionsIMPL<T> implements Connections<T> {
     @Override
     public String disconnect(int connectionId,T msg) {
 
-        if (!users_cond.containsKey(user_conId.get(connectionId)))
-            return "User with such connection id does not exist";
+        synchronized(lock_clients_ConnectionHandler){ 
+            synchronized(lock_topics){ 
+                synchronized(lock_users_cond){ 
+                    synchronized(lock_user_conId){ 
+                        if (!users_cond.containsKey(user_conId.get(connectionId)))
+                            return "User with such connection id does not exist";
 
-        if (!users_cond.get(user_conId.get(connectionId)))
-            return "User is disconnected already";
+                        if (!users_cond.get(user_conId.get(connectionId)))
+                            return "User is disconnected already";
 
-        for (List<Point> list: topics.values())
-        {
-            list.removeIf(point -> point.x == (connectionId));
-        }
+                        for (List<Point> list: topics.values())
+                        {
+                            list.removeIf(point -> point.x == (connectionId));
+                        }
 
-        String send = send(connectionId,msg);
-        if (!send.equals("GOOD"))
-            return send;
-        users_cond.put(user_conId.get(connectionId),false);
-        user_conId.remove(connectionId);
-        clients_ConnectionHandler.remove(connectionId);
-        return "GOOD";
+                        String send = send(connectionId,msg);
+                        if (!send.equals("GOOD"))
+                            return send;
+                        users_cond.put(user_conId.get(connectionId),false);
+                        user_conId.remove(connectionId);
+                        clients_ConnectionHandler.remove(connectionId);
+                        return "GOOD";
+                    }
+                }
+            }
+         }
     }
 
     public void forceDisconnect(int connectionId)
     {
-        for (List<Point> list: topics.values())
-        {
-            list.removeIf(point -> point.x == (connectionId));
-        }
-        
-        if(user_conId.containsKey(connectionId))
-            users_cond.put(user_conId.get(connectionId),false);
-        if(user_conId.containsKey(connectionId))
-            user_conId.remove(connectionId);
+        synchronized(lock_clients_ConnectionHandler){ 
+            synchronized(lock_topics){ 
+                synchronized(lock_users_cond){ 
+                    synchronized(lock_user_conId){ 
+                        for (List<Point> list: topics.values())
+                        {
+                            list.removeIf(point -> point.x == (connectionId));
+                        }
+                        
+                        if(user_conId.containsKey(connectionId))
+                            users_cond.put(user_conId.get(connectionId),false);
+                        if(user_conId.containsKey(connectionId))
+                            user_conId.remove(connectionId);
 
-        if(clients_ConnectionHandler.containsKey(connectionId))
-            clients_ConnectionHandler.remove(connectionId);
+                        if(clients_ConnectionHandler.containsKey(connectionId))
+                            clients_ConnectionHandler.remove(connectionId);
+                    }
+                }
+            }
+        }
     }
 
     public int getId() {
@@ -180,29 +219,35 @@ public class ConnectionsIMPL<T> implements Connections<T> {
 
     @Override
     public String connect(String user_name, String password,int connectionId) {
-        if (users_cond.containsKey(user_name) &&users_cond.get(user_name))
-            //user is already connected
-            return "User already logged in";
+        synchronized(lock_users){
+            synchronized(users_cond){
+                synchronized(lock_user_conId){
+                    if (users_cond.containsKey(user_name) &&users_cond.get(user_name))
+                        //user is already connected
+                        return "User already logged in";
 
-        if (users.containsKey(user_name))
-            //user already exist
-            if (users.get(user_name).equals(password))
-                {
-                    users_cond.put(user_name,true);
-                    user_conId.put(connectionId, user_name);
-                    return "GOOD";
+                    if (users.containsKey(user_name))
+                        //user already exist
+                        if (users.get(user_name).equals(password))
+                            {
+                                users_cond.put(user_name,true);
+                                user_conId.put(connectionId, user_name);
+                                return "GOOD";
+                            }
+                        else
+                            //wrong password
+                            return "Wrong password";
+
+                    else
+                    {
+                        //new user
+                        users.put(user_name,password);
+                        users_cond.put(user_name,true);
+                        user_conId.put(connectionId, user_name);
+                        return "GOOD";
+                    }
                 }
-            else
-                //wrong password
-                return "Wrong password";
-
-        else
-        {
-            //new user
-            users.put(user_name,password);
-            users_cond.put(user_name,true);
-            user_conId.put(connectionId, user_name);
-            return "GOOD";
+            }
         }
     }
 }
