@@ -354,7 +354,7 @@ void StompProtocol::summary(std::string frame)
     for(unsigned int i = 0; i < vecSize; i++)
     {
         msgOut+=std::to_string(events[i].get_time())+" - " + events[i].get_name()+":\n\n";
-        msgOut+=events[i].get_discription()+"\n\n";
+        msgOut+=events[i].get_discription()+"\n\n\n";
     }
 
     std::ofstream blabla(frame);
